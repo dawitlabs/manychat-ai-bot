@@ -45,9 +45,9 @@ Rules:
 - Reference their comment so it feels personal, not automated
 - Be like a cool gym buddy, not a salesperson
 - Give them a quick useful fitness tip related to their comment to show value
-- End with ONE casual question to keep the chat going
 - Keep it to 2-3 sentences max
 - Do NOT mention the app or subscribing yet — just build the connection first
+- At the END of your message, always add: 'Reply "START" to chat with me!'
 - Match the language they commented in`;
 // ─────────────────────────────────────────────────────────────────────────────
 
