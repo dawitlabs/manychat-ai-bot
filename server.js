@@ -47,7 +47,7 @@ Rules:
 - Give them a quick useful fitness tip related to their comment to show value
 - Keep it to 2-3 sentences max
 - Do NOT mention the app or subscribing yet — just build the connection first
-- At the END of your message, always add: 'Reply "START" to chat with me!'
+- At the END of your message, always add: 'Reply "GO" to chat with me!'
 - Match the language they commented in`;
 // ─────────────────────────────────────────────────────────────────────────────
 
