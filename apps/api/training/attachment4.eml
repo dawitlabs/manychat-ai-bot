@@ -1,0 +1,973 @@
+Received: from MN2PR12MB4392.namprd12.prod.outlook.com (2603:10b6:208:264::24)
+ by MW6PR12MB7072.namprd12.prod.outlook.com with HTTPS; Tue, 5 May 2026
+ 16:29:30 +0000
+Received: from SA9PR13CA0049.namprd13.prod.outlook.com (2603:10b6:806:22::24)
+ by MN2PR12MB4392.namprd12.prod.outlook.com (2603:10b6:208:264::24) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9846.34; Tue, 5 May
+ 2026 16:29:27 +0000
+Received: from SN1PEPF0002636C.namprd02.prod.outlook.com
+ (2603:10b6:806:22:cafe::26) by SA9PR13CA0049.outlook.office365.com
+ (2603:10b6:806:22::24) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.9891.10 via Frontend Transport; Tue,
+ 5 May 2026 16:29:27 +0000
+Authentication-Results: spf=pass (sender IP is 109.224.244.107)
+ smtp.mailfrom=ripdrip.ai; dkim=pass (signature was verified)
+ header.d=ripdrip.ai;dmarc=bestguesspass action=none
+ header.from=ripdrip.ai;compauth=pass reason=109
+Received-SPF: Pass (protection.outlook.com: domain of ripdrip.ai designates
+ 109.224.244.107 as permitted sender) receiver=protection.outlook.com;
+ client-ip=109.224.244.107; helo=mail-244107.protonmail.ch; pr=C
+Received: from mail-244107.protonmail.ch (109.224.244.107) by
+ SN1PEPF0002636C.mail.protection.outlook.com (10.167.241.137) with Microsoft
+ SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id 15.20.9891.9
+ via Frontend Transport; Tue, 5 May 2026 16:29:25 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ripdrip.ai;
+	s=protonmail2; t=1777998563; x=1778257763;
+	bh=lFJXQP1KyVzIxSMSRnH+7wmHCxKdLk8efavrIazRrZA=;
+	h=From:To:Subject:Message-ID:Date:From:To:Cc:Date:Subject:Reply-To:
+	 Feedback-ID:Message-ID:BIMI-Selector;
+	b=SQ/ZUGSyfJN/7nTgr7xa9RQmw8R/30N4rbyExMrNz8aLJoajih+kSeeRT+t6VbLoM
+	 ce/IRGZVaH67y35dtvu85ePpfbrHPz4BuSG7C8Ny9jCnoBeDe6/LSM+KouLcuYD7On
+	 TBPcg4gpMc5Nl8eMlbAUO9Y4k9lisb9qQvmTWqRmOSZV8d0sihv/Ij7L9lPV6BLnUE
+	 pkk2Gsps08PMVam3E6jjX0JHXqfswKEbD6z1K6jI37/AmsIooww17jFLVYa0k0v/88
+	 zryJNVpjbrT9JIckJYwYQXubPAuRTVz4KrLNxpR4tFJgMigj+Ag5NGMtMywWfb1vr+
+	 OvKgGSauHJyoA==
+X-Pm-Submission-Id: 4g93r12gfDz2ScNw
+From: RipDrip <no-reply@ripdrip.ai>
+To: <kyle.briere@largedumbbells.com>
+Subject: =?UTF-8?Q?Conversation_Transcript_=E2=80=94_Dan_Gr?=
+ =?UTF-8?Q?ay?=
+Message-ID: <14352d55-2bfc-e7ba-a17f-a9fcbe519168@ripdrip.ai>
+Date: Tue, 5 May 2026 16:29:20 +0000
+Content-Type: multipart/alternative;
+	boundary="--_NmP-e11a536f1a151ab7-Part_1"
+Return-Path: no-reply@ripdrip.ai
+X-MS-Exchange-Organization-ExpirationStartTime: 05 May 2026 16:29:26.4246
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Exchange-Organization-Network-Message-Id: 832f967d-ca58-4ff1-8343-08deaac37956
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: ca1ff9a0-a3aa-490b-9d34-e352f2031be9:0
+X-MS-Exchange-Organization-MessageDirectionality: Incoming
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: SN1PEPF0002636C:EE_|MN2PR12MB4392:EE_|MW6PR12MB7072:EE_
+X-MS-Exchange-Organization-AuthSource: SN1PEPF0002636C.namprd02.prod.outlook.com
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-Office365-Filtering-Correlation-Id: 832f967d-ca58-4ff1-8343-08deaac37956
+X-MS-Exchange-Organization-SCL: 1
+X-Microsoft-Antispam: BCL:0;ARA:13230040|7049299003|3109299003|69100299015|7149299003|13003099007|56012099003|8096899003|4076899003|18002099003|16102099003|19002099003;
+X-Forefront-Antispam-Report: CIP:109.224.244.107;CTRY:CH;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:mail-244107.protonmail.ch;PTR:mail-244107.protonmail.ch;CAT:NONE;SFS:(13230040)(7049299003)(3109299003)(69100299015)(7149299003)(13003099007)(56012099003)(8096899003)(4076899003)(18002099003)(16102099003)(19002099003);DIR:INB;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 May 2026 16:29:25.7838
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: 832f967d-ca58-4ff1-8343-08deaac37956
+X-MS-Exchange-CrossTenant-Id: ca1ff9a0-a3aa-490b-9d34-e352f2031be9
+X-MS-Exchange-CrossTenant-AuthSource: SN1PEPF0002636C.namprd02.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: MN2PR12MB4392
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:04.2813381
+X-MS-Exchange-Processed-By-BccFoldering: 15.20.9870.020
+X-Microsoft-Antispam-Mailbox-Delivery: ucf:0;jmr:0;auth:0;dest:I;ENG:(910005)(944506478)(944626604)(920097)(930201)(20251009189)(140003);
+X-Microsoft-Antispam-Message-Info: =?utf-8?B?cUQ4aFNGQW50OHJqNmRNanFDNWdxVWFJWThqcUpoQ3dyK01EblFHbDdLbTQz?=
+ =?utf-8?B?eUhYMGlWd0hqd0E4OURQNmduTzFjc0NlakRUT1paUlo4RmZ6VWVMYjdnR2Zl?=
+ =?utf-8?B?THEzbkVqb2t6Y1BWSk42ekJiNDgwQTFjMWswVTZJaTZEemUwRGlBRlZKdjhZ?=
+ =?utf-8?B?eTFJNW0zMVI0REl1bmVrOHBKQ0xuQUNVc0Z4SWpUejRMZU51LzNXK01DMTk2?=
+ =?utf-8?B?bFFNbEJKS3pTK2pHUEtEb3V6KzB2Zml3RXl4TFl1QmxGcVNKdDExTDdnOFlG?=
+ =?utf-8?B?blQvUWZjQnlCaEp3dVhQSEN6U0UzSG1ycGNVMlFkTFdIM3BMSi9wVTBlTlUx?=
+ =?utf-8?B?dmZqTjdLay9uQTZFYnhEWWlhS25sU09BKzB4cEw5TkU5MVBBZ01hc2VOb2NV?=
+ =?utf-8?B?ZlBIZ1hhaE42bGlnWUJrSU5xSEVzYTErYlE5NWdwTVdzSTJ3ZlBVM3VMZEJW?=
+ =?utf-8?B?by9EZUJqTnF6ajlUWjVJWTh4UGNlUjBqdG90ZHk4SWo4ck14YUdVclJGeUpk?=
+ =?utf-8?B?U2tRd0VsSHVGVDJJaHR1K2tHMDVwd2FHOU12TlhFTENoZjlNOEljVnFZdUNB?=
+ =?utf-8?B?enZvWmFobTMxQ1Z1azRuM295M3p0NEJ3MlBwTlcvbG5BNXhOMDZPVm9xdTlT?=
+ =?utf-8?B?UEZEdXpqTGVXMFh0K2ZXVCtrRlQzZVBicXc3cG96ZDVmMFkvRlQ0M050ZmFs?=
+ =?utf-8?B?L0pBd0ZhY3FsKzUzS2ZUczNJT3pqdnkvRUZwOVhDSlRhdEh3TWlOVUNrT00w?=
+ =?utf-8?B?b3g4NzQ1Y3B2QzRDSFQ0RGxXbDMrNHkvUmtYS2VlYjlYb1V5ODJNcU9UREZr?=
+ =?utf-8?B?Q0owY1dsQ2pWSGpYTUFITGVJdUFqOExWWG9JbTc3K1I4a1E5L0lBc2dhdy9I?=
+ =?utf-8?B?Ukk1WjR0Ky9ZRG1SNzF6M1lqN3RrV0NUTVFSSlN2NkdQODFkbUVNdDJGRnlh?=
+ =?utf-8?B?bFQwSTgraGNwSHp4WE9VVUtya1d3U3kvejVzK3hWZmNoNENLVzVmWWxXc0Qx?=
+ =?utf-8?B?L1dLb1ozVm1waFEvcFZkRFlUVXJrTUdzU1FFRVhqVFozUHlQMzU5OUZoZEFx?=
+ =?utf-8?B?Zm1mcWtXdjJsRDd3YjV5cFRrOU15YzR4UVpCd1NLSkJueFBrUWh5VlFrSGJM?=
+ =?utf-8?B?bGQ1RzBMa3cvSHdCZGF0VEdyb3I5ZXB1cHMwblBBcnpEdTFqNlEwRDNjMDAx?=
+ =?utf-8?B?WjZWTEVtTVdwcGlrcUdtcTkyMlZYb1laSnlxOWs4azdoNFpjVG5xVnF4QzBR?=
+ =?utf-8?B?ZndoWkpIa3BZcWN4UmxqdmEySlRTUXJWRlJZVTE0cXJmN1VuS0VZa0RqalVV?=
+ =?utf-8?B?VXZjOGh4VGU1YTZZZVB4TGFFMUVlMllMRmEwbThkOXpQK3ZOSVF6MXZRY253?=
+ =?utf-8?B?N3QyZVRiMkRaUlhWUi9xK1NmWmJwQit0M1lVY3pPamVrdGRRdGU3OS8rYVY4?=
+ =?utf-8?B?MmtSN3dBQzZUNWpJTUxXMmFKWlVaU1IyczZWdkVpTkVxTkFVS0hsb1BkbVFK?=
+ =?utf-8?B?Q3pVZ1k1UmZ5Ums2d2FsdVowSnd4WVUxYTZMbUJ2dS8zNk0wMDVLcGJSUjFT?=
+ =?utf-8?B?NmhMTyt6S2orUVJyeTk3L3hBZXJVRHYvVUh3WDJEL1M2cWxML2JaRTc5Z2tT?=
+ =?utf-8?B?Nkt6RlNkdG44S0NIanJnNUhPWXlCODl4UExZdDdLRkpUUnFCN01OcW9XSFpn?=
+ =?utf-8?B?OUFBWXkxcjl0RGkwRVZrb2lBOXVmTWVBSzhBbVRvYTE5bnlXeDRvRnFmYjRs?=
+ =?utf-8?B?QXlUcHphbms3cHZYUjRZdWlEMzRLcmZaUWowNjRKMkNkcEVLOXR4TU9YYkh5?=
+ =?utf-8?B?QVZDZFFpTGdzalhYcjhHbzM2NEFwQXBPMlZqOWhkNVNTNWk1RDhFMmpZcVRQ?=
+ =?utf-8?B?a2JqSEdxSXBKWS9LdW1JZk01OXZjL0F1dFhtVGlDRncwYWNtcTBiQVpCK1pk?=
+ =?utf-8?B?aUtWQTQ1MzgxTUZZZUZTd01iKzUxYktROHBBZVpyK1RobjhPQmI5UGhNWDEw?=
+ =?utf-8?B?MWY4bFcrcEwxZnloN2hPSVlXeXBCVnEwNXN1YU1mRGIzcEQ5T2dvQUF2Nm80?=
+ =?utf-8?B?L3htSnk2cDFvckt0U3BieVNKZWo0TkNJSzlOQytkSWpzakRLY2ltUEROVHhR?=
+ =?utf-8?B?WkhwaC9YSTlhMFNTR3BCY3RjOE9GUVdzK2Rwa2dEbWFkQXM5Z1FkbHVaUDlt?=
+ =?utf-8?B?VlpxbzZ1M2kxeGgzdHN4SzM5TnlLSGl1YllmSjBPUlNrME9WV2xFTEhnMHR5?=
+ =?utf-8?B?VjBEdzdlODRmeUIvclJRK3drYjlSb0FwaVRrZUVXQU83NElwQ1lJSktYeHV3?=
+ =?utf-8?B?ZlRMd1VnclFDOTBzVUlTMU5YcnhVdXJmOFNzRnRIWE9JR1RDaFFuWEhROE5i?=
+ =?utf-8?B?ZmM1WlFtYWo0VENvQnpZaC9RMk8xcEZOUGhFSVV4aXF6NUY4YjJidk1aSWtO?=
+ =?utf-8?B?SHYrUXFDMnJjTjdpU1pUS1p0MVo2OTA4MnlVNnU1OTEwQW5xTUQrdHh2S3Q3?=
+ =?utf-8?B?cDNEb1lOVlk3QUo5Ynl2K0lmZ3g3U3dnMjNNakx6M3FEdHJ1NHlPMC9rbmkr?=
+ =?utf-8?B?b01TSEZ0WEFKRzVheHBoc3p5Qzd2V05ka1A1L0wrS1c4VW1WcnZiMHQyRXlI?=
+ =?utf-8?B?TnNpZ3dsWGpQMU5SWEZtWCtGcUdFdkdlc2hmeE5jaDlXdCtHaHRTTVZVY1Jq?=
+ =?utf-8?B?QzlMQnlrV2VmVXpTSGdrNkFzTkZJU0N6bmg4Q2ZFd3VSTEdBdW56bi81TVE2?=
+ =?utf-8?B?WkhjdUVneTV3dDBRU0VtK0hkQ20xcHV2OVlhNnpJanJhREFjR3BNUGxmWCtE?=
+ =?utf-8?B?aDZFRzNRcHlNUDcwVGovaGlLWUdObEFhL21EMWMxem9IYzB5Um9RYnBWdzVx?=
+ =?utf-8?B?a3FXS3dsVXYwdFlHc0UveUZMeVhPdmcxbGFsemI5SGk2TFBBREl3aHBaY3E5?=
+ =?utf-8?B?YlZzRFV2d3ZkQTB5OWNzQlRZQnNrckVCZCtERFI4akpxZjlmQ0JqVURpMmZJ?=
+ =?utf-8?B?c3o1TDYvZDdNQmJ5OEVZaDNxZEZiTkI1S1IxWDF5dmYxQ1pjbEx3bXRQaDFC?=
+ =?utf-8?B?WFRFTVE1MWpOeFRha3dFUDFpMHBoK3RHVzlVK1NQcS9qdkM0eDJIT24wOXBx?=
+ =?utf-8?B?V250eEl3N2sxdFNKcVpiN3p3UXdzbDBldG5SSjdVd2hJQnMzN3dJMEJjcVhj?=
+ =?utf-8?B?Y0lGZzNDRG9oTFJiTjRCWjR1VU5GU2w3OGhWeElLQVNGNGFpaW5jMDVyQ0dl?=
+ =?utf-8?B?dm5tVUM1S0R6RmRKOE1Ra0tMck91WUR0alNGWmQzK3BtbFFvUVEzTU9kcDE2?=
+ =?utf-8?B?S2lYWWxTWG5aRWI5QjlGY2ZrUEdabW1yYm80aUorU1BMS0VubUt4MEJpV0di?=
+ =?utf-8?B?Njhib0J0aFRocHhuYW40MVowVG9tTWpnYXV0cUV0c1YxL2JYMEFaUm5yaElt?=
+ =?utf-8?B?RU9TWk9SZGZvVzVReUk3N1Y0Nlg5ZXNYVHhoK2YyN3FETUhHRTA2SFgva3E5?=
+ =?utf-8?B?MkZVUzM2cE42bWNxSUR4NlNGNG5jZDFLNmlpVmxXNGNPY1g4SnVXcDl0Tk5n?=
+ =?utf-8?B?ZnNBSW1Fd3N0ZUIxUFJ5T1hqRWY5bWFTMzdxNEpVR2RkYklRNVY1UmFkZFpO?=
+ =?utf-8?B?Ums4Zm12MFJzRkxpUW8xeGJGU0ZJQkFJTjdlYWdnVG9vdUErcnVtQUdQdElK?=
+ =?utf-8?B?L0l0T3J3a09PVHVKQko2S1lMWWhaay9UejBIaytYT2o1UnE3R2x5V0NpOVRw?=
+ =?utf-8?B?R3N3K012eEVTc1B2ZnR1cTZYbFE2YkRTSUNVWUVPdHI0YnFnaVA3b0tKaEY5?=
+ =?utf-8?Q?EIu58=3D?=
+MIME-Version: 1.0
+
+----_NmP-e11a536f1a151ab7-Part_1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Conversation Transcript
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D
+Lead: Dan Gray
+Platform: facebook
+Status: Link Sent
+Messages:
+----------
+[Rep] (2026-05-04T20:07:17.000Z) Hey, saw you wanted =
+the blueprint. I'm curious, what are your primary goals with your health =
+and fitness
+
+[Dan Gray] (2026-05-04T20:08:06.000Z) Healthier me, stronger =
+body
+
+[AI] (2026-05-04T20:12:54.965Z) Got you man, what do you mean by that=
+ specifically?
+
+[AI] (2026-05-04T20:13:08.679Z) Are you looking to drop =
+some pounds or just get your energy up?
+
+[Dan Gray] (2026-05-04T20:13:13.=
+000Z) Both
+
+[AI] (2026-05-04T20:18:29.843Z) For sure
+
+[AI] (2026-05-04T20:19:20.022Z) How has your progress been with hitting =
+those goals so far?
+
+[Dan Gray] (2026-05-04T20:19:59.000Z) Kind of stagnant=
+. Looking to get back into working out on a routine basis since my kids are=
+ no longer babies.
+
+[AI] (2026-05-04T20:24:37.658Z) Makes total sense man, =
+picking up that rhythm again is definitely a process
+
+[AI] (2026-05-04T20:24:45.859Z) Besides the physical side of things, how's =
+your nutrition lately?
+
+[Dan Gray] (2026-05-04T20:26:27.000Z) That has =
+always been the hardest part. Even when I would hit the gym or get a =
+workout 5 days a week I never could hit the correct macros. Currently i =
+prioritize protein over everything else. But i have usually 1 meal a day =
+and a snack either in the afternoon or evening
+
+[Dan Gray] =
+(2026-05-04T20:27:59.000Z) Currently I=E2=80=99m getting maybe one workout =
+a week or every other week. Mostly kettle bells
+
+[AI] (2026-05-04T20:32:44.=
+164Z) Running on limited fuel while trying to manage an inconsistent =
+routine definitely makes it tough to build momentum.
+
+[AI] (2026-05-04T20:32:53.216Z) I'm curious, what would you say has been =
+the biggest struggle or challenge you're facing currently?
+
+[Dan Gray] (2026-05-04T20:44:30.000Z) Probably getting a good workout =
+routine. I see so many and it=E2=80=99s overwhelming to be able to narrow =
+it down and pick one
+
+[AI] (2026-05-04T20:50:10.089Z) Information overload =
+is so common man. A lot of guys I work with struggle with that too.
+
+[AI] (2026-05-04T20:50:21.459Z) I'd be happy to help you out, if it's =
+something you want help with
+
+[Dan Gray] (2026-05-04T21:10:10.000Z) Yeah if=
+ you have a 3 day workout plan that hits everything that would be perfect.
+
+[AI] (2026-05-04T21:14:43.615Z) I definitely have some ideas for a 3 day =
+routine that hits everything. It would take paragraphs to type out here.
+
+[AI] (2026-05-04T21:14:53.793Z) So want me to drop a link to schedule a =
+quick call today or tomorrow? We can go over the details and see if it is a=
+ good fit.
+
+[AI] (2026-05-05T00:25:24.484Z) Hey man, still want me to drop =
+that link?
+
+[Dan Gray] (2026-05-05T00:38:48.000Z) Yeah that works
+
+[AI] (2026-05-05T00:42:45.823Z) Sounds good man. Here's the Booking link:
+
+[AI] (2026-05-05T00:42:54.100Z) https://calendly.com/kyle-briere-largedumbb=
+ells/30
+
+[AI] (2026-05-05T00:43:06.359Z) Let me know when you're booked in =
+and if you cant find a time that works with your schedule please just let =
+me know what time works for you and we can make it happen.
+----_NmP-e11a536f1a151ab7-Part_1
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html><html lang=3D"en"><head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8">
+  <meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D=
+1.0">
+  <meta http-equiv=3D"X-UA-Compatible" content=3D"IE=3Dedge">
+  <title>RipDrip =E2=80=94 Email</title>
+</head>
+<body style=3D"margin:0;padding:0;background-color:#e8ebf0;font-family:-app=
+le-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"=
+>
+  <!-- Preheader text: shown in inbox snippet, hidden in body -->
+  <div style=3D"display:none;font-size:1px;color:#e8ebf0;line-height:1px;ma=
+x-height:0;max-width:0;opacity:0;overflow:hidden;">Transcript for conversat=
+ion with Dan Gray</div>
+
+  <!-- Outer wrapper -->
+  <table role=3D"presentation" width=3D"100%" border=3D"0" cellspacing=3D"0=
+" cellpadding=3D"0" style=3D"background-color:#e8ebf0;">
+    <tr>
+      <td align=3D"center" style=3D"padding:48px 16px;">
+
+        <!-- Card -->
+        <table role=3D"presentation" width=3D"600" border=3D"0" cellspacing=
+=3D"0" cellpadding=3D"0" style=3D"max-width:600px;width:100%;background-col=
+or:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td align=3D"center" style=3D"background-color:#0f172a;padding:=
+28px 40px;">
+              <img src=3D"https://dashboard.ripdrip.com/images/ripdrip-logo=
+-full.png" alt=3D"RipDrip" height=3D"36" style=3D"height:36px;display:block=
+;" onerror=3D"this.style.display=3D'none'">
+            </td>
+          </tr>
+          <!-- Accent stripe: indigo=E2=86=92violet gradient. Degrades invi=
+sibly in Outlook (no MSO gradient support). -->
+          <tr>
+            <td style=3D"height:4px;line-height:4px;font-size:0;background:=
+linear-gradient(90deg,#6366f1 0%,#8b5cf6 50%,#6366f1 100%);">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style=3D"padding:40px;">
+             =20
+    <h2 style=3D"margin:0 0 8px;font-size:22px;color:#111827;">Conversation=
+ Transcript</h2>
+    <p style=3D"margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.=
+6;">Hi there, Here is the exported transcript.</p>
+
+    <!-- Lead Info -->
+    <div style=3D"background:#f9fafb;border:1px solid #e5e7eb;border-radius=
+:6px;padding:16px;margin:0 0 24px;">
+      <p style=3D"margin:0 0 8px;font-size:12px;font-weight:600;color:#9ca3=
+af;text-transform:uppercase;letter-spacing:0.05em;">Lead Details</p>
+      <table role=3D"presentation" width=3D"100%" border=3D"0" cellspacing=
+=3D"0" cellpadding=3D"0">
+        <tr>
+          <td style=3D"font-size:13px;color:#6b7280;padding:2px 0;width:120=
+px;">Name</td>
+          <td style=3D"font-size:13px;color:#374151;font-weight:500;">Dan G=
+ray</td>
+        </tr>
+       =20
+        <tr><td style=3D"font-size:13px;color:#6b7280;padding:2px 0;">Platf=
+orm</td><td style=3D"font-size:13px;color:#374151;text-transform:capitalize=
+;">facebook</td></tr>
+        <tr><td style=3D"font-size:13px;color:#6b7280;padding:2px 0;vertica=
+l-align:middle;">Status</td><td style=3D"padding:2px 0;vertical-align:middl=
+e;"><span style=3D"background:#d1fae5;color:#047857;border-radius:9999px;pa=
+dding:2px 10px;font-size:11px;font-weight:600;display:inline-block;">Link S=
+ent</span></td></tr>
+        <tr><td style=3D"font-size:13px;color:#6b7280;padding:2px 0;">First=
+ Contact</td><td style=3D"font-size:13px;color:#374151;">May 4, 4:07 PM EDT=
+</td></tr>
+        <tr><td style=3D"font-size:13px;color:#6b7280;padding:2px 0;">Last =
+Contact</td><td style=3D"font-size:13px;color:#374151;">May 4, 8:43 PM EDT<=
+/td></tr>
+        <tr><td style=3D"font-size:13px;color:#6b7280;padding:2px 0;">Total=
+ Messages</td><td style=3D"font-size:13px;color:#374151;">25</td></tr>
+      </table>
+    </div>
+
+    <!-- Messages =E2=80=94 iMessage-style chat bubbles -->
+    <p style=3D"margin:0 0 12px;font-size:13px;font-weight:600;color:#37415=
+1;text-transform:uppercase;letter-spacing:0.04em;">Messages (25)</p>
+    <div style=3D"background:#f5f5f7;border-radius:12px;padding:16px 12px;"=
+>
+     =20
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin:18px 0 12px;">
+              <tr>
+                <td align=3D"center" style=3D"padding:0;">
+                  <table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" r=
+ole=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#e5e7eb;border-radius:10px;pa=
+dding:3px 12px;font-size:11px;color:#6b7280;font-weight:500;white-space:now=
+rap;">
+                        Monday, May 4, 2026
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">Rep</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Hey, saw you wanted the blueprint. I'm curious, wha=
+t are your primary goals with your health and fitness
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:07 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Healthier me, stronger body
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 4:08 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Got you man, what do you mean by that specifically?
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:12 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Are you looking to drop some pounds or just get you=
+r energy up?
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:13 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Both
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 4:13 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        For sure
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:18 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        How has your progress been with hitting those goals=
+ so far?
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:19 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Kind of stagnant. Looking to get back into working =
+out on a routine basis since my kids are no longer babies.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 4:19 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Makes total sense man, picking up that rhythm again=
+ is definitely a process
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:24 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Besides the physical side of things, how's your nut=
+rition lately?
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:24 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        That has always been the hardest part. Even when I =
+would hit the gym or get a workout 5 days a week I never could hit the corr=
+ect macros. Currently i prioritize protein over everything else. But i have=
+ usually 1 meal a day and a snack either in the afternoon or evening
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 4:26 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Currently I=E2=80=99m getting maybe one workout a w=
+eek or every other week. Mostly kettle bells
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 4:27 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Running on limited fuel while trying to manage an i=
+nconsistent routine definitely makes it tough to build momentum.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:32 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        I'm curious, what would you say has been the bigges=
+t struggle or challenge you're facing currently?
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:32 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Probably getting a good workout routine. I see so m=
+any and it=E2=80=99s overwhelming to be able to narrow it down and pick one
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 4:44 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Information overload is so common man. A lot of guy=
+s I work with struggle with that too.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:50 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        I'd be happy to help you out, if it's something you=
+ want help with
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 4:50 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Yeah if you have a 3 day workout plan that hits eve=
+rything that would be perfect.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 5:10 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        I definitely have some ideas for a 3 day routine th=
+at hits everything. It would take paragraphs to type out here.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 5:14 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        So want me to drop a link to schedule a quick call =
+today or tomorrow? We can go over the details and see if it is a good fit.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 5:14 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Hey man, still want me to drop that link?
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 8:25 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:72%;padding-right:4px;vertical-align:top=
+;">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;">Dan Gray</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#E9E9EB;border-radius:18px 18=
+px 18px 4px;padding:10px 14px;font-size:14px;color:#1c1c1e;line-height:1.6;=
+word-break:break-word;">
+                        Yeah that works
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;"=
+>May 4, 8:38 PM EDT</p>
+                </td>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Sounds good man. Here's the Booking link:
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 8:42 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        https://calendly.com/kyle-briere-largedumbbells/30
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 8:42 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+            <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" borde=
+r=3D"0" role=3D"presentation" style=3D"margin-bottom:10px;">
+              <tr>
+                <td style=3D"width:28%;font-size:0;line-height:0;"></td>
+                <td style=3D"width:72%;padding-left:4px;vertical-align:top;=
+">
+                  <p style=3D"margin:0 0 3px;font-size:11px;color:#9ca3af;f=
+ont-weight:500;text-align:right;">AI</p>
+                  <table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"=
+ border=3D"0" role=3D"presentation">
+                    <tr>
+                      <td style=3D"background:#007AFF;border-radius:18px 18=
+px 4px 18px;padding:10px 14px;font-size:14px;color:#ffffff;line-height:1.6;=
+word-break:break-word;">
+                        Let me know when you're booked in and if you cant f=
+ind a time that works with your schedule please just let me know what time =
+works for you and we can make it happen.
+                      </td>
+                    </tr>
+                  </table>
+                  <p style=3D"margin:3px 0 0;font-size:11px;color:#9ca3af;t=
+ext-align:right;">May 4, 8:43 PM EDT</p>
+                </td>
+              </tr>
+            </table>
+    </div>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style=3D"padding:0 40px;">
+              <div style=3D"height:1px;background-color:#e5e7eb;"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align=3D"center" style=3D"padding:24px 40px;background-colo=
+r:#f9fafb;">
+              <p style=3D"margin:0;font-size:12px;color:#9ca3af;line-height=
+:1.6;">
+                =C2=A9 2026 RipDrip =E2=80=94 Powered by RipDrip AI<br>
+                <a href=3D"https://dashboard.ripdrip.com" style=3D"color:#3=
+b82f6;text-decoration:none;">https://dashboard.ripdrip.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- / Card -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- / Outer wrapper -->
+
+</body>
+</html>=
+
+----_NmP-e11a536f1a151ab7-Part_1--
