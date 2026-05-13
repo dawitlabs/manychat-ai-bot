@@ -26,6 +26,13 @@ await sql.unsafe(`
 
   CREATE INDEX IF NOT EXISTS "messages_user_id_created_at_idx"
     ON "messages" ("user_id", "created_at");
+
+  CREATE TABLE IF NOT EXISTS "admins" (
+    "id" bigserial PRIMARY KEY NOT NULL,
+    "email" text NOT NULL UNIQUE,
+    "password_hash" text NOT NULL,
+    "created_at" timestamptz NOT NULL DEFAULT now()
+  );
 `);
 
 console.log('Migration complete.');

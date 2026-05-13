@@ -14,6 +14,7 @@ export default function SignInViewPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard/overview';
 
+  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
 
@@ -24,13 +25,13 @@ export default function SignInViewPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
         router.push(callbackUrl);
         router.refresh();
       } else {
-        toast.error('Wrong password');
+        toast.error('Invalid credentials');
         setPassword('');
       }
     } catch {
@@ -54,10 +55,22 @@ export default function SignInViewPage() {
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='text-base'>Sign in</CardTitle>
-            <CardDescription className='text-xs'>Enter your dashboard password to continue</CardDescription>
+            <CardDescription className='text-xs'>Enter your credentials to continue</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className='space-y-4'>
+              <div className='space-y-1.5'>
+                <Label htmlFor='email'>Email</Label>
+                <Input
+                  id='email'
+                  type='email'
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder='kyle@admin.com'
+                  autoFocus
+                  required
+                />
+              </div>
               <div className='space-y-1.5'>
                 <Label htmlFor='password'>Password</Label>
                 <Input
@@ -66,7 +79,6 @@ export default function SignInViewPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder='••••••••'
-                  autoFocus
                   required
                 />
               </div>
