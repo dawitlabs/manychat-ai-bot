@@ -11,18 +11,20 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
-} from 'recharts';
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from '@/components/ui/chart';
 import { Icons } from '@/components/icons';
 import { weeklyPerformance } from '@/lib/mock-data';
+
+const trendConfig = {
+  leads: { label: 'New Leads', color: 'var(--chart-1)' },
+  calls: { label: 'Calls Booked', color: 'var(--chart-2)' }
+} satisfies ChartConfig;
 
 const monthlyTrend = [
   { month: 'Dec', leads: 18, calls: 5 },
@@ -85,12 +87,12 @@ export function ReportsView() {
           <CardDescription>Leads vs. calls booked over the last 6 months</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width='100%' height={260}>
+          <ChartContainer config={trendConfig} className='h-[260px] w-full'>
             <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id='leads-gradient' x1='0' y1='0' x2='0' y2='1'>
-                  <stop offset='5%' stopColor='var(--primary)' stopOpacity={0.3} />
-                  <stop offset='95%' stopColor='var(--primary)' stopOpacity={0} />
+                  <stop offset='5%' stopColor='var(--chart-1)' stopOpacity={0.3} />
+                  <stop offset='95%' stopColor='var(--chart-1)' stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id='calls-gradient' x1='0' y1='0' x2='0' y2='1'>
                   <stop offset='5%' stopColor='var(--chart-2)' stopOpacity={0.3} />
@@ -98,24 +100,16 @@ export function ReportsView() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
-              <XAxis dataKey='month' tick={{ fontSize: 12 }} stroke='var(--muted-foreground)' />
-              <YAxis tick={{ fontSize: 12 }} stroke='var(--muted-foreground)' />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  fontSize: '12px'
-                }}
-              />
+              <XAxis dataKey='month' tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <ChartTooltip content={<ChartTooltipContent />} />
               <Legend />
               <Area
                 type='monotone'
                 dataKey='leads'
-                stroke='var(--primary)'
+                stroke='var(--chart-1)'
                 fill='url(#leads-gradient)'
                 strokeWidth={2}
-                name='New Leads'
               />
               <Area
                 type='monotone'
@@ -123,10 +117,9 @@ export function ReportsView() {
                 stroke='var(--chart-2)'
                 fill='url(#calls-gradient)'
                 strokeWidth={2}
-                name='Calls Booked'
               />
             </AreaChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </CardContent>
       </Card>
 
