@@ -1,6 +1,9 @@
 import postgres from 'postgres';
 import { scrypt, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
+import { config } from 'dotenv';
+
+config();
 
 const scryptAsync = promisify(scrypt);
 

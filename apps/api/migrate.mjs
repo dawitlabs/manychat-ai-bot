@@ -1,4 +1,7 @@
 import postgres from 'postgres';
+import { config } from 'dotenv';
+
+config();
 
 const url = process.env.DATABASE_URL;
 if (!url) { console.error('DATABASE_URL required'); process.exit(1); }
