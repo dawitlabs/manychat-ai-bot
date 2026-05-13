@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import { neon } from '@neondatabase/serverless';
 import { scrypt, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
 import { config } from 'dotenv';
@@ -10,7 +10,7 @@ const scryptAsync = promisify(scrypt);
 const url = process.env.DATABASE_URL;
 if (!url) { console.error('DATABASE_URL required'); process.exit(1); }
 
-const sql = postgres(url, { ssl: 'require', max: 1, connect_timeout: 15 });
+const sql = neon(url);
 
 const email = 'kyle@admin.com';
 const password = 'Password123!';
@@ -26,4 +26,3 @@ await sql`
 `;
 
 console.log(`Seeded admin: ${email}`);
-await sql.end();
