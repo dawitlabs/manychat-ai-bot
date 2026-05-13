@@ -18,13 +18,20 @@ import {
 import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isOpen } = useMediaQuery();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/auth/sign-in');
+    router.refresh();
+  };
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
@@ -107,15 +114,19 @@ export default function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className='px-3 pb-3'>
-        <div className='group-data-[collapsible=icon]:hidden rounded-lg bg-muted/50 border border-border/50 px-3 py-2.5'>
+        <div className='rounded-lg bg-muted/50 border border-border/50 px-3 py-2.5'>
           <div className='flex items-center justify-between'>
-            <div>
+            <div className='group-data-[collapsible=icon]:hidden'>
               <p className='text-xs font-semibold'>Kyle Briere</p>
               <p className='text-muted-foreground text-[10px]'>Large Dumbbells Fitness</p>
             </div>
-            <div className='flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold'>
-              KB
-            </div>
+            <button
+              onClick={handleLogout}
+              className='flex h-7 w-7 items-center justify-center rounded-full bg-muted hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors'
+              title='Sign out'
+            >
+              <Icons.x className='h-3.5 w-3.5' />
+            </button>
           </div>
         </div>
       </SidebarFooter>
