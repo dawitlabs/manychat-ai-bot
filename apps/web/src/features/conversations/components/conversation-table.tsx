@@ -21,7 +21,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
-import { mockLeads, Lead } from '@/lib/mock-data';
+import { Lead } from '@/lib/mock-data';
+import { useLeads } from '@/lib/api-client';
 import { Icons } from '@/components/icons';
 
 const statusColors: Record<string, string> = {
@@ -42,6 +43,8 @@ interface ConversationTableProps {
 }
 
 export function ConversationTable({ onSelectLead, selectedLeadId }: ConversationTableProps) {
+  const { leads } = useLeads();
+
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'lastActivity', desc: true }
   ]);
@@ -103,7 +106,7 @@ export function ConversationTable({ onSelectLead, selectedLeadId }: Conversation
   ];
 
   const table = useReactTable({
-    data: mockLeads,
+    data: leads,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,

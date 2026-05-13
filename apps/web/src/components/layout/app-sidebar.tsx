@@ -35,7 +35,7 @@ export default function AppSidebar() {
       <SidebarHeader className='py-4 px-3'>
         <div className='flex items-center gap-3'>
           <div className='relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg flex-shrink-0'>
-            <Icons.sparkles className='h-4 w-4 text-white' />
+            <Icons.sparkles className='size-4 text-white' />
             <span className='absolute -top-0.5 -right-0.5 flex h-3 w-3'>
               <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75' />
               <span className='relative inline-flex h-3 w-3 rounded-full bg-green-500' />

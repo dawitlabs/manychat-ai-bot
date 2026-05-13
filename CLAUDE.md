@@ -69,3 +69,22 @@ PORT=3000          # optional, defaults to 3000
 ```
 
 The root `.env.example` mirrors the same variables for convenience.
+
+## Web Dashboard Screens
+
+| Route | Screen | Status |
+|-------|--------|--------|
+| /dashboard/overview | Command Center + KPI cards + charts | Done |
+| /dashboard/activity | Bot Activity feed + heatmap | Done |
+| /dashboard/pipeline | Kanban lead pipeline | Done |
+| /dashboard/leads | All Leads CRM table | Done |
+| /dashboard/conversations | Chat thread viewer | Done |
+| /dashboard/ai-control | Prompt editor (4 tabs) | Done |
+| /dashboard/templates | Message template library | Done |
+| /dashboard/objections | Objection playbook | Done |
+| /dashboard/analytics | Charts + funnel analytics | Done |
+| /dashboard/reports | Revenue pipeline + reports | Done |
+| /dashboard/integrations | Integration status cards | Done |
+| /dashboard/settings | Bot settings + toggles | Done |
+
+All data is currently mock (from `src/lib/mock-data.ts`). Wire to `NEXT_PUBLIC_API_URL` for live data.

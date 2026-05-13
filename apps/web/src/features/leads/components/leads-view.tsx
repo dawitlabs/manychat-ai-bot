@@ -21,7 +21,8 @@ import {
   SheetDescription
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { mockLeads, Lead } from '@/lib/mock-data';
+import { Lead } from '@/lib/mock-data';
+import { useLeads } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 type StatusFilter = 'All' | 'New' | 'Qualifying' | 'Booked' | 'Stalled';
@@ -128,6 +129,8 @@ function LeadDetailSheet({ lead, onClose }: { lead: Lead | null; onClose: () => 
 }
 
 export function LeadsView() {
+  const { leads: allLeads } = useLeads();
+
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('All');
   const [platformFilter, setPlatformFilter] = React.useState<PlatformFilter>('All');
@@ -140,7 +143,7 @@ export function LeadsView() {
     { label: 'Facebook', value: 'facebook' }
   ];
 
-  const filtered = mockLeads.filter((lead) => {
+  const filtered = allLeads.filter((lead) => {
     if (search && !lead.first_name.toLowerCase().includes(search.toLowerCase()) && !lead.user_id.includes(search)) {
       return false;
     }

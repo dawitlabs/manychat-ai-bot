@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
+import { useLeads, useStats } from '@/lib/api-client';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Integration {
   id: string;
@@ -13,89 +15,13 @@ interface Integration {
   description: string;
   status: 'connected' | 'disconnected';
   statusLabel: string;
-  detail: string;
+  detail: string | React.ReactNode;
   lastSync: string;
   iconBg: string;
   iconEl: React.ReactNode;
   actionLabel: string;
   webhookUrl?: string;
 }
-
-const integrations: Integration[] = [
-  {
-    id: 'manychat',
-    name: 'ManyChat',
-    description: 'Facebook Messenger & Instagram automation',
-    status: 'connected',
-    statusLabel: 'Receiving webhooks',
-    detail: 'All flows active',
-    lastSync: '2 min ago',
-    iconBg: 'bg-blue-500',
-    iconEl: <Icons.messageCircle className='h-5 w-5 text-white' />,
-    actionLabel: 'Configure'
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    description: 'Instagram DM automation and comment triggers',
-    status: 'connected',
-    statusLabel: 'DMs active',
-    detail: 'Comment trigger live',
-    lastSync: '1 min ago',
-    iconBg: 'bg-gradient-to-br from-pink-500 to-purple-600',
-    iconEl: <Icons.instagram className='h-5 w-5 text-white' />,
-    actionLabel: 'View'
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    description: 'Facebook Page and Messenger integration',
-    status: 'connected',
-    statusLabel: 'Page connected',
-    detail: 'Large Dumbbells Fitness',
-    lastSync: '3 min ago',
-    iconBg: 'bg-blue-600',
-    iconEl: <Icons.facebook className='h-5 w-5 text-white' />,
-    actionLabel: 'View'
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI GPT-4o mini',
-    description: 'AI language model for message generation',
-    status: 'connected',
-    statusLabel: 'API key valid',
-    detail: '47 requests today',
-    lastSync: 'Just now',
-    iconBg: 'bg-emerald-600',
-    iconEl: <Icons.sparkles className='h-5 w-5 text-white' />,
-    actionLabel: 'Change model'
-  },
-  {
-    id: 'calendly',
-    name: 'Calendly',
-    description: 'Booking link and calendar management',
-    status: 'connected',
-    statusLabel: 'Booking link active',
-    detail: '12 bookings this month',
-    lastSync: '5 min ago',
-    iconBg: 'bg-teal-600',
-    iconEl: <Icons.calendar className='h-5 w-5 text-white' />,
-    actionLabel: 'View calendar'
-  },
-  {
-    id: 'webhook',
-    name: 'Webhook URL',
-    description: 'Incoming webhook endpoint for ManyChat events',
-    status: 'connected',
-    statusLabel: 'Active',
-    detail: 'POST /webhook',
-    lastSync: '30 sec ago',
-    iconBg: 'bg-slate-600',
-    iconEl: <Icons.link className='h-5 w-5 text-white' />,
-    actionLabel: 'Copy URL',
-    webhookUrl: 'https://your-api.railway.app/webhook'
-  }
-];
 
 function IntegrationCard({ integration }: { integration: Integration }) {
   const handleAction = () => {
@@ -142,7 +68,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
             <p className='text-[10px] text-muted-foreground'>{integration.detail}</p>
           </div>
           <div className='text-right'>
-            <p className='text-[10px] text-muted-foreground'>Last sync</p>
+            <p className='text-[10px] text-muted-foreground'>Last activity</p>
             <p className='text-[10px] font-medium'>{integration.lastSync}</p>
           </div>
         </div>
@@ -167,13 +93,101 @@ function IntegrationCard({ integration }: { integration: Integration }) {
 }
 
 export function IntegrationsView() {
+  const { leads } = useLeads();
+  const { data: stats } = useStats();
+
+  const latestActivity = leads.length > 0
+    ? formatDistanceToNow(new Date(Math.max(...leads.map((l) => l.lastActivity))), { addSuffix: true })
+    : 'No activity yet';
+
+  const totalLeads = stats?.totalLeads ?? 0;
+  const callsBooked = stats?.callsBooked ?? 0;
+
+  const integrations: Integration[] = [
+    {
+      id: 'manychat',
+      name: 'ManyChat',
+      description: 'Facebook Messenger & Instagram automation',
+      status: totalLeads > 0 ? 'connected' : 'disconnected',
+      statusLabel: 'Receiving webhooks',
+      detail: totalLeads > 0 ? `${totalLeads} conversations started` : 'No messages yet',
+      lastSync: latestActivity,
+      iconBg: 'bg-blue-500',
+      iconEl: <Icons.messageCircle className='h-5 w-5 text-white' />,
+      actionLabel: 'Configure'
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      description: 'Instagram DM automation and comment triggers',
+      status: 'connected',
+      statusLabel: 'DMs active',
+      detail: 'Comment trigger live',
+      lastSync: latestActivity,
+      iconBg: 'bg-gradient-to-br from-pink-500 to-purple-600',
+      iconEl: <Icons.instagram className='h-5 w-5 text-white' />,
+      actionLabel: 'View'
+    },
+    {
+      id: 'facebook',
+      name: 'Facebook',
+      description: 'Facebook Page and Messenger integration',
+      status: 'connected',
+      statusLabel: 'Page connected',
+      detail: 'Large Dumbbells Fitness',
+      lastSync: latestActivity,
+      iconBg: 'bg-blue-600',
+      iconEl: <Icons.facebook className='h-5 w-5 text-white' />,
+      actionLabel: 'View'
+    },
+    {
+      id: 'openai',
+      name: 'OpenAI GPT-4o mini',
+      description: 'AI language model for message generation',
+      status: totalLeads > 0 ? 'connected' : 'disconnected',
+      statusLabel: 'API key valid',
+      detail: totalLeads > 0 ? `${totalLeads} leads processed` : 'No requests yet',
+      lastSync: latestActivity,
+      iconBg: 'bg-emerald-600',
+      iconEl: <Icons.sparkles className='h-5 w-5 text-white' />,
+      actionLabel: 'Change model'
+    },
+    {
+      id: 'calendly',
+      name: 'Calendly',
+      description: 'Booking link and calendar management',
+      status: 'connected',
+      statusLabel: 'Booking link active',
+      detail: callsBooked > 0 ? `${callsBooked} bookings so far` : 'No bookings yet',
+      lastSync: latestActivity,
+      iconBg: 'bg-teal-600',
+      iconEl: <Icons.calendar className='h-5 w-5 text-white' />,
+      actionLabel: 'View calendar'
+    },
+    {
+      id: 'webhook',
+      name: 'Webhook URL',
+      description: 'Incoming webhook endpoint for ManyChat events',
+      status: 'connected',
+      statusLabel: 'Active',
+      detail: 'POST /webhook',
+      lastSync: latestActivity,
+      iconBg: 'bg-slate-600',
+      iconEl: <Icons.link className='h-5 w-5 text-white' />,
+      actionLabel: 'Copy URL',
+      webhookUrl: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/webhook`
+    }
+  ];
+
+  const connectedCount = integrations.filter((i) => i.status === 'connected').length;
+
   return (
     <div className='space-y-4'>
       <div className='flex items-center justify-between'>
         <p className='text-muted-foreground text-sm'>All integrations connected and active</p>
         <Badge variant='outline' className='bg-green-500/10 text-green-400 border-green-500/20'>
           <span className='mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500 inline-block' />
-          6 / 6 connected
+          {connectedCount} / {integrations.length} connected
         </Badge>
       </div>
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>

@@ -4,7 +4,8 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Icons } from '@/components/icons';
-import { mockLeads, Lead } from '@/lib/mock-data';
+import { Lead } from '@/lib/mock-data';
+import { useLeads } from '@/lib/api-client';
 
 type PipelineStatus = 'New' | 'Qualifying' | 'Offer Made' | 'Link Sent' | 'Booked';
 
@@ -117,10 +118,12 @@ function LeadCard({ lead, col }: { lead: Lead; col: Column }) {
 }
 
 export function PipelineView() {
-  const total = mockLeads.length;
+  const { leads: allLeads } = useLeads();
+
+  const total = allLeads.length;
 
   const columnLeads = columns.reduce<Record<PipelineStatus, Lead[]>>((acc, col) => {
-    acc[col.id] = mockLeads.filter((l) => mapLeadStatus(l) === col.id);
+    acc[col.id] = allLeads.filter((l) => mapLeadStatus(l) === col.id);
     return acc;
   }, {} as Record<PipelineStatus, Lead[]>);
 

@@ -3,47 +3,40 @@
 import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent
-} from '@/components/ui/chart';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Icons } from '@/components/icons';
-import { weeklyPerformance } from '@/lib/mock-data';
+import { useLeads, useStats, deriveWeeklyPerformance, deriveMonthlyTrend } from '@/lib/api-client';
 
 const trendConfig = {
   leads: { label: 'New Leads', color: 'var(--chart-1)' },
-  calls: { label: 'Calls Booked', color: 'var(--chart-2)' }
+  calls: { label: 'Calls Booked', color: 'var(--chart-2)' },
 } satisfies ChartConfig;
 
-const monthlyTrend = [
-  { month: 'Dec', leads: 18, calls: 5 },
-  { month: 'Jan', leads: 24, calls: 7 },
-  { month: 'Feb', leads: 31, calls: 9 },
-  { month: 'Mar', leads: 28, calls: 10 },
-  { month: 'Apr', leads: 39, calls: 13 },
-  { month: 'May', leads: 47, calls: 16 }
-];
-
-const bestWeek = { week: 'Week of Apr 14', newLeads: 12, booked: 5, revenue: '$14,250' };
-const worstWeek = { week: 'Week of Dec 16', newLeads: 4, booked: 1, revenue: '$2,850' };
+const AVG_DEAL_SIZE = 2850;
+const EST_CLOSE_RATE = 0.35;
 
 export function ReportsView() {
-  const avgDealSize = 2850;
-  const totalLeads = 47;
-  const estCloseRate = 0.35;
-  const estCloses = Math.round(totalLeads * estCloseRate);
-  const estRevenue = estCloses * avgDealSize;
+  const { leads } = useLeads();
+  const { data: stats } = useStats();
+
+  const totalLeads = stats?.totalLeads ?? 0;
+  const callsBooked = stats?.callsBooked ?? 0;
+  const estCloses = Math.round(totalLeads * EST_CLOSE_RATE);
+  const estRevenue = estCloses * AVG_DEAL_SIZE;
+
+  const weeklyPerformance = deriveWeeklyPerformance(leads);
+  const monthlyTrend = deriveMonthlyTrend(leads);
+
+  const bestWeek = weeklyPerformance.length > 0
+    ? [...weeklyPerformance].sort((a, b) => b.booked - a.booked)[0]
+    : null;
+  const worstWeek = weeklyPerformance.length > 1
+    ? [...weeklyPerformance].sort((a, b) => a.booked - b.booked)[0]
+    : null;
+
+  const hasData = leads.length > 0;
 
   return (
     <div className='space-y-6'>
@@ -59,7 +52,7 @@ export function ReportsView() {
             ${estRevenue.toLocaleString()}
           </CardTitle>
           <p className='text-muted-foreground text-sm mt-1'>
-            Based on current conversion rate and average program value
+            Based on {(EST_CLOSE_RATE * 100).toFixed(0)}% est. close rate × ${AVG_DEAL_SIZE.toLocaleString()} avg program value
           </p>
         </CardHeader>
         <CardContent>
@@ -69,11 +62,11 @@ export function ReportsView() {
               <p className='text-muted-foreground text-xs mt-1'>Leads in Pipeline</p>
             </div>
             <div className='rounded-lg bg-background/50 border border-border/50 p-3 text-center'>
-              <p className='text-2xl font-bold tabular-nums'>{estCloses}</p>
-              <p className='text-muted-foreground text-xs mt-1'>Estimated Closes</p>
+              <p className='text-2xl font-bold tabular-nums'>{callsBooked}</p>
+              <p className='text-muted-foreground text-xs mt-1'>Calls Booked</p>
             </div>
             <div className='rounded-lg bg-background/50 border border-border/50 p-3 text-center'>
-              <p className='text-2xl font-bold tabular-nums'>${avgDealSize.toLocaleString()}</p>
+              <p className='text-2xl font-bold tabular-nums'>${AVG_DEAL_SIZE.toLocaleString()}</p>
               <p className='text-muted-foreground text-xs mt-1'>Avg Deal Size</p>
             </div>
           </div>
@@ -87,95 +80,80 @@ export function ReportsView() {
           <CardDescription>Leads vs. calls booked over the last 6 months</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={trendConfig} className='h-[260px] w-full'>
-            <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id='leads-gradient' x1='0' y1='0' x2='0' y2='1'>
-                  <stop offset='5%' stopColor='var(--chart-1)' stopOpacity={0.3} />
-                  <stop offset='95%' stopColor='var(--chart-1)' stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id='calls-gradient' x1='0' y1='0' x2='0' y2='1'>
-                  <stop offset='5%' stopColor='var(--chart-2)' stopOpacity={0.3} />
-                  <stop offset='95%' stopColor='var(--chart-2)' stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
-              <XAxis dataKey='month' tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Legend />
-              <Area
-                type='monotone'
-                dataKey='leads'
-                stroke='var(--chart-1)'
-                fill='url(#leads-gradient)'
-                strokeWidth={2}
-              />
-              <Area
-                type='monotone'
-                dataKey='calls'
-                stroke='var(--chart-2)'
-                fill='url(#calls-gradient)'
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ChartContainer>
+          {!hasData ? (
+            <div className='flex h-[260px] items-center justify-center text-center'>
+              <div>
+                <Icons.trendingUp className='mx-auto h-8 w-8 text-muted-foreground/30 mb-2' />
+                <p className='text-sm text-muted-foreground'>Monthly trend will appear once leads start coming in</p>
+              </div>
+            </div>
+          ) : (
+            <ChartContainer config={trendConfig} className='h-[260px] w-full'>
+              <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id='leads-gradient' x1='0' y1='0' x2='0' y2='1'>
+                    <stop offset='5%' stopColor='var(--chart-1)' stopOpacity={0.3} />
+                    <stop offset='95%' stopColor='var(--chart-1)' stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id='calls-gradient' x1='0' y1='0' x2='0' y2='1'>
+                    <stop offset='5%' stopColor='var(--chart-2)' stopOpacity={0.3} />
+                    <stop offset='95%' stopColor='var(--chart-2)' stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
+                <XAxis dataKey='month' tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Area type='monotone' dataKey='leads' stroke='var(--chart-1)' fill='url(#leads-gradient)' strokeWidth={2} />
+                <Area type='monotone' dataKey='calls' stroke='var(--chart-2)' fill='url(#calls-gradient)' strokeWidth={2} />
+              </AreaChart>
+            </ChartContainer>
+          )}
         </CardContent>
       </Card>
 
       {/* Best / Worst Week */}
-      <div className='grid gap-4 md:grid-cols-2'>
-        <Card className='border-green-500/30 bg-green-500/5'>
-          <CardHeader className='pb-2'>
-            <div className='flex items-center gap-2'>
-              <Icons.flame className='h-4 w-4 text-green-500' />
-              <CardTitle className='text-sm text-green-400'>Best Week</CardTitle>
-            </div>
-            <CardDescription>{bestWeek.week}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className='grid grid-cols-3 gap-2 text-center'>
-              <div>
-                <p className='text-xl font-bold text-green-400'>{bestWeek.newLeads}</p>
-                <p className='text-xs text-muted-foreground'>Leads</p>
-              </div>
-              <div>
-                <p className='text-xl font-bold text-green-400'>{bestWeek.booked}</p>
-                <p className='text-xs text-muted-foreground'>Booked</p>
-              </div>
-              <div>
-                <p className='text-xl font-bold text-green-400'>{bestWeek.revenue}</p>
-                <p className='text-xs text-muted-foreground'>Est. Revenue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className='border-red-500/20 bg-red-500/5'>
-          <CardHeader className='pb-2'>
-            <div className='flex items-center gap-2'>
-              <Icons.trendingDown className='h-4 w-4 text-red-400' />
-              <CardTitle className='text-sm text-red-400'>Worst Week</CardTitle>
-            </div>
-            <CardDescription>{worstWeek.week}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className='grid grid-cols-3 gap-2 text-center'>
-              <div>
-                <p className='text-xl font-bold text-red-400'>{worstWeek.newLeads}</p>
-                <p className='text-xs text-muted-foreground'>Leads</p>
-              </div>
-              <div>
-                <p className='text-xl font-bold text-red-400'>{worstWeek.booked}</p>
-                <p className='text-xs text-muted-foreground'>Booked</p>
-              </div>
-              <div>
-                <p className='text-xl font-bold text-red-400'>{worstWeek.revenue}</p>
-                <p className='text-xs text-muted-foreground'>Est. Revenue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {(bestWeek || worstWeek) && (
+        <div className='grid gap-4 md:grid-cols-2'>
+          {bestWeek && (
+            <Card className='border-green-500/30 bg-green-500/5'>
+              <CardHeader className='pb-2'>
+                <div className='flex items-center gap-2'>
+                  <Icons.flame className='h-4 w-4 text-green-500' />
+                  <CardTitle className='text-sm text-green-400'>Best Week</CardTitle>
+                </div>
+                <CardDescription>{bestWeek.week}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className='grid grid-cols-3 gap-2 text-center'>
+                  <div><p className='text-xl font-bold text-green-400'>{bestWeek.newLeads}</p><p className='text-xs text-muted-foreground'>Leads</p></div>
+                  <div><p className='text-xl font-bold text-green-400'>{bestWeek.booked}</p><p className='text-xs text-muted-foreground'>Booked</p></div>
+                  <div><p className='text-xl font-bold text-green-400'>${(bestWeek.booked * AVG_DEAL_SIZE).toLocaleString()}</p><p className='text-xs text-muted-foreground'>Est. Revenue</p></div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {worstWeek && (
+            <Card className='border-red-500/20 bg-red-500/5'>
+              <CardHeader className='pb-2'>
+                <div className='flex items-center gap-2'>
+                  <Icons.trendingDown className='h-4 w-4 text-red-400' />
+                  <CardTitle className='text-sm text-red-400'>Lowest Week</CardTitle>
+                </div>
+                <CardDescription>{worstWeek.week}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className='grid grid-cols-3 gap-2 text-center'>
+                  <div><p className='text-xl font-bold text-red-400'>{worstWeek.newLeads}</p><p className='text-xs text-muted-foreground'>Leads</p></div>
+                  <div><p className='text-xl font-bold text-red-400'>{worstWeek.booked}</p><p className='text-xs text-muted-foreground'>Booked</p></div>
+                  <div><p className='text-xl font-bold text-red-400'>${(worstWeek.booked * AVG_DEAL_SIZE).toLocaleString()}</p><p className='text-xs text-muted-foreground'>Est. Revenue</p></div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Weekly Breakdown Table */}
       <Card>
@@ -184,48 +162,44 @@ export function ReportsView() {
           <CardDescription>Lead pipeline metrics with revenue estimates by week</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Week</TableHead>
-                <TableHead className='text-right'>New Leads</TableHead>
-                <TableHead className='text-right'>Qualified</TableHead>
-                <TableHead className='text-right'>Booked</TableHead>
-                <TableHead className='text-right'>Conversion</TableHead>
-                <TableHead className='text-right'>Est. Revenue</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {weeklyPerformance.map((row) => {
-                const revenue = row.booked * avgDealSize;
-                return (
+          {weeklyPerformance.length === 0 ? (
+            <div className='py-10 text-center text-sm text-muted-foreground'>
+              No weekly data yet — check back once leads start coming in
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Week</TableHead>
+                  <TableHead className='text-right'>New Leads</TableHead>
+                  <TableHead className='text-right'>Qualified</TableHead>
+                  <TableHead className='text-right'>Booked</TableHead>
+                  <TableHead className='text-right'>Conversion</TableHead>
+                  <TableHead className='text-right'>Est. Revenue</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {weeklyPerformance.map((row) => (
                   <TableRow key={row.week}>
                     <TableCell className='font-medium'>{row.week}</TableCell>
                     <TableCell className='text-right tabular-nums'>{row.newLeads}</TableCell>
                     <TableCell className='text-right tabular-nums'>{row.qualified}</TableCell>
                     <TableCell className='text-right tabular-nums'>{row.booked}</TableCell>
                     <TableCell className='text-right'>
-                      <Badge
-                        variant='outline'
-                        className={
-                          parseFloat(row.conversionRate) >= 25
-                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                            : parseFloat(row.conversionRate) >= 15
-                            ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                            : 'bg-muted text-muted-foreground'
-                        }
-                      >
-                        {row.conversionRate}
-                      </Badge>
+                      <Badge variant='outline' className={
+                        parseFloat(row.conversionRate) >= 25 ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                        parseFloat(row.conversionRate) >= 15 ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                        'bg-muted text-muted-foreground'
+                      }>{row.conversionRate}</Badge>
                     </TableCell>
                     <TableCell className='text-right tabular-nums font-medium text-primary'>
-                      ${revenue.toLocaleString()}
+                      ${(row.booked * AVG_DEAL_SIZE).toLocaleString()}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
