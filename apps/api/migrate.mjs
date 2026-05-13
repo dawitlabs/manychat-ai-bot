@@ -1,8 +1,10 @@
 import dns from 'node:dns';
+import { Agent, setGlobalDispatcher } from 'undici';
 import { neon } from '@neondatabase/serverless';
 import { config } from 'dotenv';
 
 dns.setDefaultResultOrder('ipv4first');
+setGlobalDispatcher(new Agent({ connectTimeout: 30_000 }));
 
 config();
 
