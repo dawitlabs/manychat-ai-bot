@@ -1,5 +1,8 @@
+import dns from 'node:dns';
 import { neon } from '@neondatabase/serverless';
 import { config } from 'dotenv';
+
+dns.setDefaultResultOrder('ipv4first');
 
 config();
 

@@ -1,7 +1,10 @@
+import dns from 'node:dns';
 import { neon } from '@neondatabase/serverless';
 import { scrypt, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
 import { config } from 'dotenv';
+
+dns.setDefaultResultOrder('ipv4first');
 
 config();
 
