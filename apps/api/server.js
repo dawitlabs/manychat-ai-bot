@@ -473,6 +473,46 @@ app.post("/reset", (req, res) => {
   return res.status(400).json({ error: "user_id required" });
 });
 
+/**
+ * GET /conversations - list all active conversations
+ */
+app.get("/conversations", (req, res) => {
+  const list = [];
+  for (const [user_id, convo] of conversations.entries()) {
+    list.push({
+      user_id,
+      messages: convo.messages,
+      lastActivity: convo.lastActivity,
+      source: convo.source || "instagram",
+      startedFromComment: convo.startedFromComment || null,
+    });
+  }
+  res.json(list);
+});
+
+/**
+ * GET /stats - aggregate stats
+ */
+app.get("/stats", (req, res) => {
+  const now = Date.now();
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  let activeToday = 0;
+  let callsBooked = 0;
+  for (const convo of conversations.values()) {
+    if (convo.lastActivity > oneDayAgo) activeToday++;
+    const hasCalendly = convo.messages.some(
+      (m) => m.content && m.content.includes("calendly.com")
+    );
+    if (hasCalendly) callsBooked++;
+  }
+  res.json({
+    totalLeads: conversations.size,
+    activeToday,
+    callsBooked,
+    conversionRate: conversations.size > 0 ? ((callsBooked / conversations.size) * 100).toFixed(1) : "0.0",
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Bot server running on port ${PORT}`);
