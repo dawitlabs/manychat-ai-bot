@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: kyle-api
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: apps/api
+    buildCommand: pnpm install --frozen-lockfile && pnpm build && pnpm db:migrate
+    startCommand: node dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DASHBOARD_API_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: NODE_ENV
+        value: production

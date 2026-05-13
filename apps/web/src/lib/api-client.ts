@@ -3,11 +3,15 @@ import { format, subDays, startOfDay, subMonths, startOfMonth, endOfMonth } from
 import type { Lead, LeadStatus, Platform } from './mock-data';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_KEY = process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ?? '';
+
+const authHeaders = API_KEY ? { 'X-API-Key': API_KEY } : {};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ApiConversation {
   user_id: string;
+  first_name: string | null;
   messages: Array<{ role: 'assistant' | 'user'; content: string; timestamp?: number }>;
   lastActivity: number;
   source: string;
@@ -24,13 +28,13 @@ export interface ApiStats {
 // ── Fetch functions ───────────────────────────────────────────────────────────
 
 async function fetchConversations(): Promise<ApiConversation[]> {
-  const res = await fetch(`${API_URL}/conversations`, { cache: 'no-store' });
+  const res = await fetch(`${API_URL}/conversations`, { cache: 'no-store', headers: authHeaders });
   if (!res.ok) throw new Error('Failed to fetch conversations');
   return res.json();
 }
 
 async function fetchStats(): Promise<ApiStats> {
-  const res = await fetch(`${API_URL}/stats`, { cache: 'no-store' });
+  const res = await fetch(`${API_URL}/stats`, { cache: 'no-store', headers: authHeaders });
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
 }
@@ -100,7 +104,7 @@ export function mapApiConversation(convo: ApiConversation): Lead {
   }));
   return {
     user_id: convo.user_id,
-    first_name: `Lead ${convo.user_id.slice(-4).toUpperCase()}`,
+    first_name: convo.first_name ?? `Lead ${convo.user_id.slice(-4).toUpperCase()}`,
     platform,
     status: deriveStatus(convo),
     funnelStep: deriveFunnelStep(convo),

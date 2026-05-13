@@ -1,18 +1,30 @@
 {
   "name": "@manychat-bot/api",
   "version": "1.0.0",
-  "description": "Instagram DM AI bot using ManyChat + OpenAI",
-  "main": "server.js",
+  "private": true,
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.44.0",
     "express": "^4.19.2",
-    "openai": "^4.52.7"
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "openai": "^4.52.7",
+    "postgres": "^3.4.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
   }
 }
