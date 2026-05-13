@@ -5,7 +5,7 @@ import type { Lead, LeadStatus, Platform } from './mock-data';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 const API_KEY = process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ?? '';
 
-const authHeaders = API_KEY ? { 'X-API-Key': API_KEY } : {};
+const authHeaders: Record<string, string> = API_KEY ? { 'X-API-Key': API_KEY } : {};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
