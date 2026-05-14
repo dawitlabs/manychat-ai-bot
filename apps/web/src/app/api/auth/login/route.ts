@@ -1,29 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { scrypt } from 'node:crypto';
-import { promisify } from 'node:util';
 import { signSession, COOKIE_NAME, MAX_AGE } from '@/lib/auth';
-import sql from '@/lib/db';
-
-const scryptAsync = promisify(scrypt);
-
-async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [salt, hash] = stored.split(':');
-  if (!salt || !hash) return false;
-  const derived = await scryptAsync(password, salt, 64) as Buffer;
-  return derived.toString('hex') === hash;
-}
 
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json();
-  if (!email || !password) {
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-  }
+  const body = await req.json();
 
-  const rows = await sql<{ password_hash: string }[]>`
-    SELECT password_hash FROM admins WHERE email = ${email} LIMIT 1
-  `;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+  const upstream = await fetch(`${apiUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 
-  if (rows.length === 0 || !(await verifyPassword(password, rows[0].password_hash))) {
+  if (!upstream.ok) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 

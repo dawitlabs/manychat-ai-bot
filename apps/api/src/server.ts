@@ -9,6 +9,7 @@ import commentRouter from './routes/comment';
 import resetRouter from './routes/reset';
 import conversationsRouter from './routes/conversations';
 import statsRouter from './routes/stats';
+import authRouter from './routes/auth';
 import { env } from './config/env';
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(commentRouter);
 app.use(resetRouter);
 app.use(conversationsRouter);
 app.use(statsRouter);
+app.use(authRouter);
 
 app.use(errorHandler);
 
