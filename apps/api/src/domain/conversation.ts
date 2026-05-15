@@ -14,6 +14,8 @@ export interface Conversation {
   platform: Platform;
   source: Source;
   started_from_comment: string | null;
+  status: string;
+  funnel_step: number;
   last_activity: number;
   messages: Message[];
 }

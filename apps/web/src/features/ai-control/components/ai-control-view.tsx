@@ -16,7 +16,9 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { Icons } from '@/components/icons';
+import { usePrompts, useBotSettings, savePrompts, saveBotSettings } from '@/lib/api-client';
 
 const DEFAULT_FUNNEL_STEPS = [
   {
@@ -77,7 +79,9 @@ But first, quick question: what's the #1 thing you want to change about your bod
 This opens the conversation naturally and transitions into qualification.`;
 
 export function AIControlView() {
-  const storageKey = 'kyle-ai-control';
+  const qc = useQueryClient();
+  const { data: promptsData } = usePrompts();
+  const { data: settingsData } = useBotSettings();
 
   const [funnelSteps, setFunnelSteps] = React.useState(DEFAULT_FUNNEL_STEPS);
   const [systemPrompt, setSystemPrompt] = React.useState(DEFAULT_SYSTEM_PROMPT);
@@ -88,30 +92,42 @@ export function AIControlView() {
   const [maxHistory, setMaxHistory] = React.useState('20');
 
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (data.funnelSteps) setFunnelSteps(data.funnelSteps);
-        if (data.systemPrompt) setSystemPrompt(data.systemPrompt);
-        if (data.commentPrompt) setCommentPrompt(data.commentPrompt);
-        if (data.bookingLink) setBookingLink(data.bookingLink);
-        if (data.aiModel) setAiModel(data.aiModel);
-        if (data.ttl) setTtl(data.ttl);
-        if (data.maxHistory) setMaxHistory(data.maxHistory);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+    if (promptsData?.systemPrompt) setSystemPrompt(promptsData.systemPrompt);
+    if (promptsData?.commentPrompt) setCommentPrompt(promptsData.commentPrompt);
+  }, [promptsData]);
 
-  const save = (partial: Record<string, unknown>) => {
+  React.useEffect(() => {
+    if (!settingsData) return;
+    if (settingsData.bookingLink) setBookingLink(settingsData.bookingLink);
+    if (settingsData.model) setAiModel(settingsData.model);
+    if (settingsData.ttl) setTtl(String(settingsData.ttl));
+    if (settingsData.maxHistory) setMaxHistory(String(settingsData.maxHistory));
+  }, [settingsData]);
+
+  const save = async (partial: {
+    systemPrompt?: string;
+    commentPrompt?: string;
+    bookingLink?: string;
+    aiModel?: string;
+    ttl?: string;
+    maxHistory?: string;
+  }) => {
     try {
-      const existing = JSON.parse(localStorage.getItem(storageKey) || '{}');
-      localStorage.setItem(storageKey, JSON.stringify({ ...existing, ...partial }));
-      toast.success('Saved successfully', {
-        description: 'Changes are stored locally'
-      });
+      const prompts: Record<string, string> = {};
+      const botSettings: Record<string, unknown> = {};
+      if (partial.systemPrompt !== undefined) prompts.systemPrompt = partial.systemPrompt;
+      if (partial.commentPrompt !== undefined) prompts.commentPrompt = partial.commentPrompt;
+      if (partial.bookingLink !== undefined) botSettings.bookingLink = partial.bookingLink;
+      if (partial.aiModel !== undefined) botSettings.model = partial.aiModel;
+      if (partial.ttl !== undefined) botSettings.ttl = Number(partial.ttl);
+      if (partial.maxHistory !== undefined) botSettings.maxHistory = Number(partial.maxHistory);
+      await Promise.all([
+        Object.keys(prompts).length ? savePrompts(prompts) : Promise.resolve(),
+        Object.keys(botSettings).length ? saveBotSettings(botSettings) : Promise.resolve(),
+      ]);
+      qc.invalidateQueries({ queryKey: ['prompts'] });
+      qc.invalidateQueries({ queryKey: ['bot-settings'] });
+      toast.success('Saved successfully', { description: 'Changes are live on the bot' });
     } catch {
       toast.error('Failed to save');
     }
@@ -152,7 +168,7 @@ export function AIControlView() {
                 />
                 <Button
                   size='sm'
-                  onClick={() => save({ funnelSteps })}
+                  onClick={() => toast.info('Funnel step labels are display-only — edit the System Prompt to change bot behaviour')}
                   className='w-full'
                 >
                   <Icons.check className='mr-2 h-3.5 w-3.5' />

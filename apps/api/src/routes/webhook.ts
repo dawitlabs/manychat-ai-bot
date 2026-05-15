@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getConversation, upsertConversation, appendMessage } from '../services/conversation-store';
 import { generateReply } from '../services/openai-client';
 import { SYSTEM_PROMPT } from '../domain/prompts';
+import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
 
 const router = Router();
@@ -33,7 +34,8 @@ router.post('/webhook', webhookLimiter, async (req: Request, res: Response) => {
     const convo = await getConversation(user_id);
     const history = convo?.messages.map((m) => ({ role: m.role, content: m.content })) ?? [{ role: 'user' as const, content: message }];
 
-    const aiReply = await generateReply(SYSTEM_PROMPT, history);
+    const activePrompt = await getSettingJson<string>('system_prompt', SYSTEM_PROMPT);
+    const aiReply = await generateReply(activePrompt, history);
     await appendMessage(user_id, 'assistant', aiReply);
 
     console.log(`[${new Date().toISOString()}] AI reply to ${user_id}: ${aiReply}`);

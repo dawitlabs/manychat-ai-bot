@@ -16,6 +16,23 @@ export interface ApiConversation {
   lastActivity: number;
   source: string;
   startedFromComment: string | null;
+  status?: string;
+  funnelStep?: number;
+}
+
+export interface ApiPrompts {
+  systemPrompt: string;
+  commentPrompt: string;
+}
+
+export interface ApiBotSettings {
+  botActive: boolean;
+  model: string;
+  maxTokens: number;
+  temperature: number;
+  ttl: number;
+  maxHistory: number;
+  bookingLink: string;
 }
 
 export interface ApiStats {
@@ -39,6 +56,42 @@ async function fetchStats(): Promise<ApiStats> {
   return res.json();
 }
 
+async function fetchPrompts(): Promise<ApiPrompts> {
+  const res = await fetch(`${API_URL}/prompts`, { cache: 'no-store', headers: authHeaders });
+  if (!res.ok) throw new Error('Failed to fetch prompts');
+  return res.json();
+}
+
+async function fetchBotSettings(): Promise<ApiBotSettings> {
+  const res = await fetch(`${API_URL}/bot-settings`, { cache: 'no-store', headers: authHeaders });
+  if (!res.ok) throw new Error('Failed to fetch bot settings');
+  return res.json();
+}
+
+export async function savePrompts(data: Partial<ApiPrompts>): Promise<void> {
+  await fetch(`${API_URL}/prompts`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function saveBotSettings(data: Partial<ApiBotSettings>): Promise<void> {
+  await fetch(`${API_URL}/bot-settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateLeadStatus(user_id: string, status: string, funnelStep?: number): Promise<void> {
+  await fetch(`${API_URL}/leads/${encodeURIComponent(user_id)}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    body: JSON.stringify({ status, funnelStep }),
+  });
+}
+
 // ── Query options ─────────────────────────────────────────────────────────────
 
 export const conversationsQueryOptions = queryOptions({
@@ -55,6 +108,18 @@ export const statsQueryOptions = queryOptions({
   retry: 1,
 });
 
+export const promptsQueryOptions = queryOptions({
+  queryKey: ['prompts'],
+  queryFn: fetchPrompts,
+  retry: 1,
+});
+
+export const botSettingsQueryOptions = queryOptions({
+  queryKey: ['bot-settings'],
+  queryFn: fetchBotSettings,
+  retry: 1,
+});
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useLeads() {
@@ -65,6 +130,14 @@ export function useLeads() {
 
 export function useStats() {
   return useQuery(statsQueryOptions);
+}
+
+export function usePrompts() {
+  return useQuery(promptsQueryOptions);
+}
+
+export function useBotSettings() {
+  return useQuery(botSettingsQueryOptions);
 }
 
 // ── Mapper ────────────────────────────────────────────────────────────────────
@@ -106,8 +179,8 @@ export function mapApiConversation(convo: ApiConversation): Lead {
     user_id: convo.user_id,
     first_name: convo.first_name ?? `Lead ${convo.user_id.slice(-4).toUpperCase()}`,
     platform,
-    status: deriveStatus(convo),
-    funnelStep: deriveFunnelStep(convo),
+    status: (convo.status as LeadStatus) ?? deriveStatus(convo),
+    funnelStep: (convo.funnelStep as 1 | 2 | 3 | 4 | 5 | 6) ?? deriveFunnelStep(convo),
     messages,
     lastActivity: convo.lastActivity,
     source: convo.startedFromComment ? 'comment' : platform === 'facebook' ? 'facebook_dm' : 'instagram_dm',

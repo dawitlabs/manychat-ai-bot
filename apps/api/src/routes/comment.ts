@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { upsertConversation, appendMessage } from '../services/conversation-store';
 import { generateReply } from '../services/openai-client';
 import { COMMENT_REPLY_PROMPT } from '../domain/prompts';
+import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
 
 const router = Router();
@@ -27,8 +28,9 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
   console.log(`[${new Date().toISOString()}] [${platform}] Comment from ${user_id} (${name}): ${comment_text}`);
 
   try {
+    const activeCommentPrompt = await getSettingJson<string>('comment_prompt', COMMENT_REPLY_PROMPT);
     const aiReply = await generateReply(
-      COMMENT_REPLY_PROMPT,
+      activeCommentPrompt,
       [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}". Write the opening DM.` }],
       { maxTokens: 200, temperature: 0.8 },
     );

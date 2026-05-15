@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { useBotSettings, saveBotSettings } from '@/lib/api-client';
 
 const ENDPOINTS = [
   { method: 'POST', path: '/webhook', description: 'DM conversations from ManyChat' },
@@ -44,12 +46,10 @@ const methodColor: Record<string, string> = {
 };
 
 export function BotSettingsView() {
-  const [botActive, setBotActive] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('bot-active') !== 'false';
-    }
-    return true;
-  });
+  const qc = useQueryClient();
+  const { data: settingsData } = useBotSettings();
+
+  const [botActive, setBotActive] = React.useState(true);
   const [model, setModel] = React.useState('gpt-4o-mini');
   const [maxTokens, setMaxTokens] = React.useState([300]);
   const [temperature, setTemperature] = React.useState([0.7]);
@@ -57,17 +57,33 @@ export function BotSettingsView() {
   const [maxHistory, setMaxHistory] = React.useState('20');
   const [bookingLink, setBookingLink] = React.useState('https://calendly.com/kyle-briere-largedumbbells/30');
 
-  const toggleBot = (val: boolean) => {
-    setBotActive(val);
-    localStorage.setItem('bot-active', String(val));
-    toast.success(val ? 'Bot is now LIVE' : 'Bot paused', {
-      description: val ? 'AI is now responding to DMs' : 'No new responses will be sent'
-    });
+  React.useEffect(() => {
+    if (!settingsData) return;
+    setBotActive(settingsData.botActive ?? true);
+    setModel(settingsData.model ?? 'gpt-4o-mini');
+    setMaxTokens([settingsData.maxTokens ?? 300]);
+    setTemperature([settingsData.temperature ?? 0.7]);
+    setTtl(String(settingsData.ttl ?? 23));
+    setMaxHistory(String(settingsData.maxHistory ?? 20));
+    setBookingLink(settingsData.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30');
+  }, [settingsData]);
+
+  const persist = async (patch: Record<string, unknown>, label: string) => {
+    try {
+      await saveBotSettings(patch);
+      qc.invalidateQueries({ queryKey: ['bot-settings'] });
+      toast.success(`${label} saved`, { description: 'Changes will apply to new conversations' });
+    } catch {
+      toast.error('Failed to save');
+    }
   };
 
-  const save = (label: string) => {
-    toast.success(`${label} saved`, { description: 'Changes will apply to new conversations' });
+  const toggleBot = (val: boolean) => {
+    setBotActive(val);
+    persist({ botActive: val }, val ? 'Bot is now LIVE' : 'Bot paused');
   };
+
+  const save = (label: string, patch: Record<string, unknown>) => persist(patch, label);
 
   return (
     <div className='space-y-6 max-w-3xl'>
@@ -198,7 +214,7 @@ export function BotSettingsView() {
             </div>
           </div>
 
-          <Button onClick={() => save('Response settings')} className='w-full sm:w-auto'>
+          <Button onClick={() => save('Response settings', { model, maxTokens: maxTokens[0], temperature: temperature[0], ttl: Number(ttl), maxHistory: Number(maxHistory) })} className='w-full sm:w-auto'>
             <Icons.check className='mr-2 h-4 w-4' />
             Save Response Settings
           </Button>
@@ -227,7 +243,7 @@ export function BotSettingsView() {
               <Icons.externalLink className='h-4 w-4' />
             </Button>
           </div>
-          <Button onClick={() => save('Booking link')}>
+          <Button onClick={() => save('Booking link', { bookingLink })}>
             <Icons.check className='mr-2 h-4 w-4' />
             Save Booking Link
           </Button>
