@@ -32,7 +32,8 @@ export default function SignInViewPage() {
         router.push(callbackUrl);
         router.refresh();
       } else {
-        toast.error('Invalid credentials');
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? 'Invalid credentials');
         setPassword('');
       }
     } catch {
