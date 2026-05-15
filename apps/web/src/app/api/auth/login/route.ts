@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signSession, COOKIE_NAME, MAX_AGE } from '@/lib/auth';
 
+const API_URL = process.env.API_URL ?? 'https://kyle-api.onrender.com';
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const apiUrl = process.env.API_URL;
-  if (!apiUrl) {
-    console.error('API_URL env var is not set');
-    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
-  }
-
   try {
-    const upstream = await fetch(`${apiUrl}/auth/login`, {
+    const upstream = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

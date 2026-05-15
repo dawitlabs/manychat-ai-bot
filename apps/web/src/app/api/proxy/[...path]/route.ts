@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySession, COOKIE_NAME } from '@/lib/auth';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3000';
+const API_URL = process.env.API_URL ?? 'https://kyle-api.onrender.com';
 
 async function proxy(req: NextRequest, path: string) {
   const cookieStore = await cookies();
