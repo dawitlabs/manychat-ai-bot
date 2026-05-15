@@ -16,6 +16,7 @@ export default function SignInViewPage() {
 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,14 +74,25 @@ export default function SignInViewPage() {
               </div>
               <div className='space-y-1.5'>
                 <Label htmlFor='password'>Password</Label>
-                <Input
-                  id='password'
-                  type='password'
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder='••••••••'
-                  required
-                />
+                <div className='relative'>
+                  <Input
+                    id='password'
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder='••••••••'
+                    className='pr-10'
+                    required
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setShowPassword((v) => !v)}
+                    className='absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground'
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <Icons.eyeOff className='h-4 w-4' /> : <Icons.eye className='h-4 w-4' />}
+                  </button>
+                </div>
               </div>
               <Button type='submit' className='w-full' disabled={loading}>
                 {loading ? (
