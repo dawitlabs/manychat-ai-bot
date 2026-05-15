@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
+import postgres from 'postgres';
 import { signSession, COOKIE_NAME, MAX_AGE } from '@/lib/auth';
 
+const scryptAsync = promisify(scrypt);
+
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [salt, hash] = stored.split(':');
+  if (!salt || !hash) return false;
+  const derived = await scryptAsync(password, salt, 64) as Buffer;
+  const hashBuf = Buffer.from(hash, 'hex');
+  if (derived.length !== hashBuf.length) return false;
+  return timingSafeEqual(derived, hashBuf);
+}
+
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-
-  const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
-  const upstream = await fetch(`${apiUrl}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!upstream.ok) {
+  const { email, password } = await req.json();
+  if (!email || !password) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  }
+
+  const sql = postgres(process.env.DATABASE_URL!);
+  try {
+    const rows = await sql`SELECT password_hash FROM admins WHERE email = ${email} LIMIT 1`;
+    if (rows.length === 0 || !(await verifyPassword(password, rows[0].password_hash))) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+  } finally {
+    await sql.end();
   }
 
   const token = await signSession();
