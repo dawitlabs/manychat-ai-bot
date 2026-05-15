@@ -6,7 +6,6 @@ const schema = z.object({
   PORT: z.coerce.number().default(3000),
   OPENAI_API_KEY: z.string().min(1),
   DATABASE_URL: z.string().min(1),
-  DASHBOARD_API_KEY: z.string().min(1),
   WEB_ORIGIN: z.string().optional(),
 });
 

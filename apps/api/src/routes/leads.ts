@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { requireApiKey } from '../middleware/api-key';
 import { updateConversationStatus } from '../services/conversation-store';
 
 const router = Router();
 
-router.put('/leads/:user_id/status', requireApiKey, async (req: Request, res: Response) => {
+router.put('/leads/:user_id/status', async (req: Request, res: Response) => {
   const { user_id } = req.params;
   const { status, funnelStep } = req.body as { status?: string; funnelStep?: number };
   if (!status) {

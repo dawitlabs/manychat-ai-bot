@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { requireApiKey } from '../middleware/api-key';
 import { getSettingJson, setSettingJson } from '../services/settings-store';
 
 const DEFAULTS = {
@@ -14,12 +13,12 @@ const DEFAULTS = {
 
 const router = Router();
 
-router.get('/bot-settings', requireApiKey, async (_req: Request, res: Response) => {
+router.get('/bot-settings', async (_req: Request, res: Response) => {
   const data = await getSettingJson('bot_settings', DEFAULTS);
   res.json(data);
 });
 
-router.put('/bot-settings', requireApiKey, async (req: Request, res: Response) => {
+router.put('/bot-settings', async (req: Request, res: Response) => {
   const current = await getSettingJson('bot_settings', DEFAULTS);
   const updated = { ...current, ...req.body };
   await setSettingJson('bot_settings', updated);

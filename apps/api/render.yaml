@@ -13,8 +13,6 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      - key: DASHBOARD_API_KEY
-        sync: false
       - key: WEB_ORIGIN
         sync: false
       - key: NODE_ENV
