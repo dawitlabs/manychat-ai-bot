@@ -2,10 +2,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { format, subDays, startOfDay, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import type { Lead, LeadStatus, Platform } from './mock-data';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
-const API_KEY = process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ?? '';
-
-const authHeaders: Record<string, string> = API_KEY ? { 'X-API-Key': API_KEY } : {};
+const PROXY = '/api/proxy';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -45,49 +42,49 @@ export interface ApiStats {
 // ── Fetch functions ───────────────────────────────────────────────────────────
 
 async function fetchConversations(): Promise<ApiConversation[]> {
-  const res = await fetch(`${API_URL}/conversations`, { cache: 'no-store', headers: authHeaders });
+  const res = await fetch(`${PROXY}/conversations`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch conversations');
   return res.json();
 }
 
 async function fetchStats(): Promise<ApiStats> {
-  const res = await fetch(`${API_URL}/stats`, { cache: 'no-store', headers: authHeaders });
+  const res = await fetch(`${PROXY}/stats`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
 }
 
 async function fetchPrompts(): Promise<ApiPrompts> {
-  const res = await fetch(`${API_URL}/prompts`, { cache: 'no-store', headers: authHeaders });
+  const res = await fetch(`${PROXY}/prompts`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch prompts');
   return res.json();
 }
 
 async function fetchBotSettings(): Promise<ApiBotSettings> {
-  const res = await fetch(`${API_URL}/bot-settings`, { cache: 'no-store', headers: authHeaders });
+  const res = await fetch(`${PROXY}/bot-settings`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch bot settings');
   return res.json();
 }
 
 export async function savePrompts(data: Partial<ApiPrompts>): Promise<void> {
-  await fetch(`${API_URL}/prompts`, {
+  await fetch(`${PROXY}/prompts`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
 }
 
 export async function saveBotSettings(data: Partial<ApiBotSettings>): Promise<void> {
-  await fetch(`${API_URL}/bot-settings`, {
+  await fetch(`${PROXY}/bot-settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
 }
 
 export async function updateLeadStatus(user_id: string, status: string, funnelStep?: number): Promise<void> {
-  await fetch(`${API_URL}/leads/${encodeURIComponent(user_id)}/status`, {
+  await fetch(`${PROXY}/leads/${encodeURIComponent(user_id)}/status`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, funnelStep }),
   });
 }

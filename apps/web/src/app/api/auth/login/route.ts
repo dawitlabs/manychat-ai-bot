@@ -4,7 +4,7 @@ import { signSession, COOKIE_NAME, MAX_AGE } from '@/lib/auth';
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+  const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
   const upstream = await fetch(`${apiUrl}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
