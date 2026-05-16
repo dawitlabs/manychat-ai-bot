@@ -27,9 +27,11 @@ import { Icons } from '@/components/icons';
 
 const statusColors: Record<string, string> = {
   New: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  Qualifying: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+  Engaged: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+  Qualified: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
   Booked: 'bg-green-500/10 text-green-500 border-green-500/20',
-  Stalled: 'bg-muted text-muted-foreground border-border',
+  Closed: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  Lost: 'bg-muted text-muted-foreground border-border',
 };
 
 const platformColors: Record<string, string> = {
@@ -50,7 +52,7 @@ export function ConversationTable({ onSelectLead, selectedLeadId }: Conversation
   ]);
   const [globalFilter, setGlobalFilter] = React.useState('');
 
-  const columns: ColumnDef<Lead>[] = [
+  const columns: ColumnDef<Lead>[] = React.useMemo(() => [
     {
       accessorKey: 'first_name',
       header: 'Contact',
@@ -103,7 +105,7 @@ export function ConversationTable({ onSelectLead, selectedLeadId }: Conversation
         <span className='text-muted-foreground text-sm'>Step {row.original.funnelStep}</span>
       )
     }
-  ];
+  ], []);
 
   const table = useReactTable({
     data: leads,
