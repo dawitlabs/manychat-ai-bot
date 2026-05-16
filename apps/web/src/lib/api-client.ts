@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { format, subDays, startOfDay, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import type { Lead, LeadStatus, Platform } from './mock-data';
@@ -121,7 +122,7 @@ export const botSettingsQueryOptions = queryOptions({
 
 export function useLeads() {
   const { data, isLoading, isError } = useQuery(conversationsQueryOptions);
-  const leads = (data ?? []).map(mapApiConversation);
+  const leads = React.useMemo(() => (data ?? []).map(mapApiConversation), [data]);
   return { leads, isLoading, isError, count: leads.length };
 }
 
@@ -144,10 +145,10 @@ function deriveStatus(convo: ApiConversation): LeadStatus {
     (m) => m.role === 'assistant' && m.content.includes('calendly.com')
   );
   if (hasCalendly) return 'Booked';
-  const staleMs = 48 * 60 * 60 * 1000;
-  if (Date.now() - convo.lastActivity > staleMs && convo.messages.length > 2) return 'Stalled';
   if (convo.messages.length <= 2) return 'New';
-  return 'Qualifying';
+  const n = convo.messages.length;
+  if (n <= 6) return 'Engaged';
+  return 'Qualified';
 }
 
 function deriveFunnelStep(convo: ApiConversation): 1 | 2 | 3 | 4 | 5 | 6 {
