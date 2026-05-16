@@ -65,7 +65,7 @@ const OBJECTIONS: Objection[] = [
 function countOccurrences(keywords: string[], leads: ReturnType<typeof useLeads>['leads']): number {
   if (keywords.length === 0) {
     // For "no-reply": count stalled leads
-    return leads.filter((l) => l.status === 'Stalled').length;
+    return leads.filter((l) => l.status === 'Lost').length;
   }
   let count = 0;
   for (const lead of leads) {

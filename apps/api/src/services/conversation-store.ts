@@ -1,26 +1,25 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc, inArray } from 'drizzle-orm';
 import { db } from '../db/client';
 import { conversations, messages } from '../db/schema';
 import type { Conversation, Platform, Source } from '../domain/conversation';
+import { getSettingJson } from './settings-store';
 
-const CONVERSATION_TTL_MS = 23 * 60 * 60 * 1000;
-const MAX_HISTORY = 20;
+const DEFAULT_MAX_HISTORY = 40;
 
 export async function getConversation(user_id: string): Promise<Conversation | null> {
-  const convo = await db.query.conversations.findFirst({
-    where: eq(conversations.user_id, user_id),
-  });
+  const [convo, { maxHistory }] = await Promise.all([
+    db.query.conversations.findFirst({ where: eq(conversations.user_id, user_id) }),
+    getSettingJson<{ maxHistory?: number }>('bot_settings', {}),
+  ]);
   if (!convo) return null;
 
-  const lastActivity = convo.last_activity.getTime();
-  if (Date.now() - lastActivity > CONVERSATION_TTL_MS) return null;
-
+  const limit = maxHistory ?? DEFAULT_MAX_HISTORY;
   const msgs = await db
     .select()
     .from(messages)
     .where(eq(messages.user_id, user_id))
     .orderBy(desc(messages.created_at))
-    .limit(MAX_HISTORY);
+    .limit(limit);
 
   return {
     user_id: convo.user_id,
@@ -30,7 +29,7 @@ export async function getConversation(user_id: string): Promise<Conversation | n
     started_from_comment: convo.started_from_comment,
     status: convo.status,
     funnel_step: convo.funnel_step,
-    last_activity: lastActivity,
+    last_activity: convo.last_activity.getTime(),
     messages: msgs.reverse().map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
@@ -67,21 +66,9 @@ export async function upsertConversation(params: {
 
 export async function appendMessage(user_id: string, role: 'user' | 'assistant', content: string): Promise<void> {
   await db.insert(messages).values({ user_id, role, content });
-
-  // Update funnel step and status based on message content and count
-  const msgs = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.user_id, user_id));
-
-  const hasCalendly = msgs.some((m) => m.role === 'assistant' && m.content.includes('calendly.com'));
-  const n = msgs.length;
-  const status = hasCalendly ? 'Booked' : n <= 2 ? 'New' : 'Qualifying';
-  const funnel_step = hasCalendly ? 6 : n <= 2 ? 1 : n <= 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : n <= 10 ? 5 : 6;
-
   await db
     .update(conversations)
-    .set({ last_activity: new Date(), status, funnel_step })
+    .set({ last_activity: new Date() })
     .where(eq(conversations.user_id, user_id));
 }
 
@@ -112,30 +99,35 @@ export async function getAllConversations(): Promise<ApiConversationResponse[]> 
   const convos = await db.query.conversations.findMany({
     orderBy: (c) => [desc(c.last_activity)],
   });
+  if (convos.length === 0) return [];
 
-  const result: ApiConversationResponse[] = [];
-  for (const convo of convos) {
-    const msgs = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.user_id, convo.user_id))
-      .orderBy(messages.created_at);
+  const userIds = convos.map((c) => c.user_id);
+  const allMessages = await db
+    .select()
+    .from(messages)
+    .where(inArray(messages.user_id, userIds))
+    .orderBy(asc(messages.created_at));
 
-    result.push({
-      user_id: convo.user_id,
-      first_name: convo.first_name,
-      platform: convo.platform,
-      source: convo.source,
-      startedFromComment: convo.started_from_comment,
-      status: convo.status,
-      funnelStep: convo.funnel_step,
-      lastActivity: convo.last_activity.getTime(),
-      messages: msgs.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        timestamp: m.created_at.getTime(),
-      })),
-    });
+  const msgsByUser = new Map<string, typeof allMessages>();
+  for (const msg of allMessages) {
+    const bucket = msgsByUser.get(msg.user_id) ?? [];
+    bucket.push(msg);
+    msgsByUser.set(msg.user_id, bucket);
   }
-  return result;
+
+  return convos.map((convo) => ({
+    user_id: convo.user_id,
+    first_name: convo.first_name,
+    platform: convo.platform,
+    source: convo.source,
+    startedFromComment: convo.started_from_comment,
+    status: convo.status,
+    funnelStep: convo.funnel_step,
+    lastActivity: convo.last_activity.getTime(),
+    messages: (msgsByUser.get(convo.user_id) ?? []).map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: m.created_at.getTime(),
+    })),
+  }));
 }

@@ -88,3 +88,17 @@ The root `.env.example` mirrors the same variables for convenience.
 | /dashboard/settings | Bot settings + toggles | Done |
 
 All data is currently mock (from `src/lib/mock-data.ts`). Wire to `NEXT_PUBLIC_API_URL` for live data.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`dawitlabs/manychat-ai-bot`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical label vocabulary — `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

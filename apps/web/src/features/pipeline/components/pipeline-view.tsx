@@ -7,7 +7,7 @@ import { Icons } from '@/components/icons';
 import { Lead } from '@/lib/mock-data';
 import { useLeads } from '@/lib/api-client';
 
-type PipelineStatus = 'New' | 'Qualifying' | 'Offer Made' | 'Link Sent' | 'Booked';
+type PipelineStatus = 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Closed';
 
 interface Column {
   id: PipelineStatus;
@@ -28,48 +28,45 @@ const columns: Column[] = [
     topBorderClass: 'bg-blue-500'
   },
   {
-    id: 'Qualifying',
-    label: 'Qualifying',
+    id: 'Engaged',
+    label: 'Engaged',
     colorClass: 'bg-yellow-500/10',
     borderClass: 'border-yellow-500/30',
     badgeClass: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
     topBorderClass: 'bg-yellow-500'
   },
   {
-    id: 'Offer Made',
-    label: 'Offer Made',
+    id: 'Qualified',
+    label: 'Qualified',
     colorClass: 'bg-orange-500/10',
     borderClass: 'border-orange-500/30',
     badgeClass: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
     topBorderClass: 'bg-orange-500'
   },
   {
-    id: 'Link Sent',
-    label: 'Link Sent',
-    colorClass: 'bg-purple-500/10',
-    borderClass: 'border-purple-500/30',
-    badgeClass: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    topBorderClass: 'bg-purple-500'
-  },
-  {
     id: 'Booked',
-    label: 'Booked ✓',
+    label: 'Booked',
     colorClass: 'bg-green-500/10',
     borderClass: 'border-green-500/30',
     badgeClass: 'bg-green-500/10 text-green-400 border-green-500/20',
     topBorderClass: 'bg-green-500'
+  },
+  {
+    id: 'Closed',
+    label: 'Closed ✓',
+    colorClass: 'bg-emerald-500/10',
+    borderClass: 'border-emerald-500/30',
+    badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    topBorderClass: 'bg-emerald-500'
   }
 ];
 
 function mapLeadStatus(lead: Lead): PipelineStatus {
+  if (lead.status === 'Closed') return 'Closed';
   if (lead.status === 'Booked') return 'Booked';
-  if (lead.status === 'New') return 'New';
-  if (lead.status === 'Stalled') return 'Qualifying';
-  // Qualifying — split by funnel step
-  if (lead.funnelStep <= 3) return 'Qualifying';
-  if (lead.funnelStep === 4) return 'Offer Made';
-  if (lead.funnelStep === 5) return 'Link Sent';
-  return 'Qualifying';
+  if (lead.status === 'Qualified') return 'Qualified';
+  if (lead.status === 'Engaged') return 'Engaged';
+  return 'New';
 }
 
 function formatRelativeTime(timestamp: number): string {

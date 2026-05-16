@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { getConversation, upsertConversation, appendMessage } from '../services/conversation-store';
-import { generateReply } from '../services/openai-client';
+import { getConversation, upsertConversation, appendMessage, updateConversationStatus } from '../services/conversation-store';
+import { generateReply, classifyConversation } from '../services/openai-client';
 import { SYSTEM_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
@@ -34,9 +34,19 @@ router.post('/webhook', webhookLimiter, async (req: Request, res: Response) => {
     const convo = await getConversation(user_id);
     const history = convo?.messages.map((m) => ({ role: m.role, content: m.content })) ?? [{ role: 'user' as const, content: message }];
 
-    const activePrompt = await getSettingJson<string>('system_prompt', SYSTEM_PROMPT);
-    const aiReply = await generateReply(activePrompt, history);
+    const [activePrompt, botSettings] = await Promise.all([
+      getSettingJson<string>('system_prompt', SYSTEM_PROMPT),
+      getSettingJson<{ bookingLink?: string }>('bot_settings', {}),
+    ]);
+    const bookingLink = botSettings.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30';
+    const resolvedPrompt = activePrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
+
+    const aiReply = await generateReply(resolvedPrompt, history);
     await appendMessage(user_id, 'assistant', aiReply);
+
+    const fullHistory = [...history, { role: 'assistant' as const, content: aiReply }];
+    const { funnelStep, status } = await classifyConversation(fullHistory);
+    await updateConversationStatus(user_id, status, funnelStep);
 
     console.log(`[${new Date().toISOString()}] AI reply to ${user_id}: ${aiReply}`);
 

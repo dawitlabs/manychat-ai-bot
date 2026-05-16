@@ -28,9 +28,14 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
   console.log(`[${new Date().toISOString()}] [${platform}] Comment from ${user_id} (${name}): ${comment_text}`);
 
   try {
-    const activeCommentPrompt = await getSettingJson<string>('comment_prompt', COMMENT_REPLY_PROMPT);
+    const [activeCommentPrompt, botSettings] = await Promise.all([
+      getSettingJson<string>('comment_prompt', COMMENT_REPLY_PROMPT),
+      getSettingJson<{ bookingLink?: string }>('bot_settings', {}),
+    ]);
+    const bookingLink = botSettings.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30';
+    const resolvedPrompt = activeCommentPrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
     const aiReply = await generateReply(
-      activeCommentPrompt,
+      resolvedPrompt,
       [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}". Write the opening DM.` }],
       { maxTokens: 200, temperature: 0.8 },
     );

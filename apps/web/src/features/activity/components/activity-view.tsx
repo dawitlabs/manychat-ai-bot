@@ -54,12 +54,12 @@ export function ActivityView() {
         });
       });
 
-      if (lead.status === 'Stalled') {
+      if (lead.status === 'Lost') {
         all.push({
           id: `${lead.user_id}-stalled`,
           type: 'stalled',
           initials,
-          description: `${lead.first_name} stalled — no reply for 48h`,
+          description: `${lead.first_name} marked lost`,
           preview: `Last: "${lead.messages.at(-1)?.content.slice(0, 60) ?? ''}…"`,
           timestamp: lead.lastActivity,
         });

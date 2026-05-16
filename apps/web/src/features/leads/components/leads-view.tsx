@@ -25,7 +25,7 @@ import { Lead } from '@/lib/mock-data';
 import { useLeads } from '@/lib/api-client';
 import { toast } from 'sonner';
 
-type StatusFilter = 'All' | 'New' | 'Qualifying' | 'Booked' | 'Stalled';
+type StatusFilter = 'All' | 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Closed' | 'Lost';
 type PlatformFilter = 'All' | 'instagram' | 'facebook';
 
 function formatRelativeTime(timestamp: number): string {
@@ -40,9 +40,11 @@ function formatRelativeTime(timestamp: number): string {
 
 const statusBadgeClass: Record<string, string> = {
   New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Qualifying: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  Engaged: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  Qualified: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   Booked: 'bg-green-500/10 text-green-400 border-green-500/20',
-  Stalled: 'bg-red-500/10 text-red-400 border-red-500/20'
+  Closed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  Lost: 'bg-muted text-muted-foreground border-border'
 };
 
 function LeadDetailSheet({ lead, onClose }: { lead: Lead | null; onClose: () => void }) {
@@ -136,7 +138,7 @@ export function LeadsView() {
   const [platformFilter, setPlatformFilter] = React.useState<PlatformFilter>('All');
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
 
-  const statusFilters: StatusFilter[] = ['All', 'New', 'Qualifying', 'Booked', 'Stalled'];
+  const statusFilters: StatusFilter[] = ['All', 'New', 'Engaged', 'Qualified', 'Booked', 'Closed', 'Lost'];
   const platformFilters: { label: string; value: PlatformFilter }[] = [
     { label: 'All Platforms', value: 'All' },
     { label: 'Instagram', value: 'instagram' },

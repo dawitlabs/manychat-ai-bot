@@ -2,7 +2,7 @@
 // Generated to simulate realistic lead data
 
 export type Platform = 'instagram' | 'facebook';
-export type LeadStatus = 'New' | 'Qualifying' | 'Booked' | 'Stalled';
+export type LeadStatus = 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Closed' | 'Lost';
 export type MessageRole = 'assistant' | 'user';
 
 export interface Message {
@@ -58,7 +58,7 @@ export const mockLeads: Lead[] = [
     user_id: 'fb_7293018472',
     first_name: 'Tyler',
     platform: 'facebook',
-    status: 'Qualifying',
+    status: 'Engaged',
     funnelStep: 3,
     source: 'facebook_dm',
     lastActivity: now - 3 * hour,
@@ -99,7 +99,7 @@ export const mockLeads: Lead[] = [
     user_id: 'ig_5647382910',
     first_name: 'Devon',
     platform: 'instagram',
-    status: 'Stalled',
+    status: 'Engaged',
     funnelStep: 2,
     source: 'instagram_dm',
     lastActivity: now - 3 * day,
@@ -147,7 +147,7 @@ export const mockLeads: Lead[] = [
     user_id: 'ig_6473829104',
     first_name: 'Alex',
     platform: 'instagram',
-    status: 'Qualifying',
+    status: 'Qualified',
     funnelStep: 4,
     source: 'instagram_dm',
     lastActivity: now - 5 * hour,
@@ -186,7 +186,7 @@ export const mockLeads: Lead[] = [
     user_id: 'ig_1029384756',
     first_name: 'Ryan',
     platform: 'instagram',
-    status: 'Stalled',
+    status: 'Engaged',
     funnelStep: 3,
     source: 'instagram_dm',
     lastActivity: now - 5 * day,
@@ -203,7 +203,7 @@ export const mockLeads: Lead[] = [
     user_id: 'fb_5647382901',
     first_name: 'Carlos',
     platform: 'facebook',
-    status: 'Qualifying',
+    status: 'Qualified',
     funnelStep: 5,
     source: 'comment',
     lastActivity: now - 4 * hour,
@@ -275,7 +275,7 @@ export const mockLeads: Lead[] = [
     user_id: 'fb_1928374650',
     first_name: 'Brandon',
     platform: 'facebook',
-    status: 'Qualifying',
+    status: 'Engaged',
     funnelStep: 2,
     source: 'facebook_dm',
     lastActivity: now - 6 * hour,
@@ -312,7 +312,7 @@ export const mockLeads: Lead[] = [
     user_id: 'fb_9283746510',
     first_name: 'Antonio',
     platform: 'facebook',
-    status: 'Stalled',
+    status: 'Qualified',
     funnelStep: 4,
     source: 'instagram_dm',
     lastActivity: now - 7 * day,
@@ -337,7 +337,7 @@ const additionalFirstNames = [
   'Edward', 'Brian', 'Ronald', 'Timothy', 'Gary', 'Larry', 'Jeffrey', 'Frank'
 ];
 
-const statuses: LeadStatus[] = ['New', 'Qualifying', 'Stalled', 'Booked'];
+const statuses: LeadStatus[] = ['New', 'Engaged', 'Qualified', 'Booked'];
 const platforms: Platform[] = ['instagram', 'facebook'];
 const sources: Lead['source'][] = ['instagram_dm', 'facebook_dm', 'comment'];
 const funnelSteps: Lead['funnelStep'][] = [1, 2, 3, 4, 5, 6];
@@ -424,8 +424,8 @@ export const platformData = [
 // Funnel data
 export const funnelData = [
   { step: 'New Leads', count: mockLeads.filter(l => l.status === 'New').length },
-  { step: 'Qualifying', count: mockLeads.filter(l => l.status === 'Qualifying').length },
-  { step: 'Stalled', count: mockLeads.filter(l => l.status === 'Stalled').length },
+  { step: 'Engaged', count: mockLeads.filter(l => l.status === 'Engaged').length },
+  { step: 'Qualified', count: mockLeads.filter(l => l.status === 'Qualified').length },
   { step: 'Call Booked', count: mockLeads.filter(l => l.status === 'Booked').length },
 ];
 

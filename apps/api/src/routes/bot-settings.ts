@@ -6,8 +6,7 @@ const DEFAULTS = {
   model: 'gpt-4o-mini',
   maxTokens: 300,
   temperature: 0.7,
-  ttl: 23,
-  maxHistory: 20,
+  maxHistory: 40,
   bookingLink: 'https://calendly.com/kyle-briere-largedumbbells/30',
 };
 
