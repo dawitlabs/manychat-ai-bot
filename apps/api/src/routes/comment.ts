@@ -13,6 +13,7 @@ const bodySchema = z.object({
   comment_text: z.string().min(1),
   first_name: z.string().optional(),
   platform: z.enum(['instagram', 'facebook']).optional().default('instagram'),
+  post_context: z.string().optional(), // e.g. "fat loss", "muscle building", "nutrition tips"
 });
 
 router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
@@ -22,7 +23,7 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
     return;
   }
 
-  const { user_id, comment_text, first_name, platform } = parsed.data;
+  const { user_id, comment_text, first_name, platform, post_context } = parsed.data;
   const name = first_name ?? 'there';
 
   console.log(`[${new Date().toISOString()}] [${platform}] Comment from ${user_id} (${name}): ${comment_text}`);
@@ -34,9 +35,12 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
     ]);
     const bookingLink = botSettings.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30';
     const resolvedPrompt = activeCommentPrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
+    const postLine = post_context
+      ? `The post they commented on was about: "${post_context}". Reference this naturally in your opening — e.g. "saw you commented on my ${post_context} post".`
+      : '';
     const aiReply = await generateReply(
       resolvedPrompt,
-      [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}". Write the opening DM.` }],
+      [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}". ${postLine} Write the opening DM.` }],
       { maxTokens: 200, temperature: 0.8 },
     );
 
@@ -46,6 +50,7 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
       platform,
       source: 'comment',
       started_from_comment: comment_text,
+      post_context: post_context ?? null,
     });
     await appendMessage(user_id, 'assistant', aiReply);
 

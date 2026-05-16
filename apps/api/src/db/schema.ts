@@ -13,6 +13,7 @@ export const conversations = pgTable('conversations', {
   platform: text('platform').notNull(),
   source: text('source').notNull(),
   started_from_comment: text('started_from_comment'),
+  post_context: text('post_context'),
   status: text('status').notNull().default('New'),
   funnel_step: integer('funnel_step').notNull().default(1),
   last_activity: timestamp('last_activity', { withTimezone: true }).notNull().defaultNow(),

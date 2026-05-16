@@ -39,7 +39,10 @@ router.post('/webhook', webhookLimiter, async (req: Request, res: Response) => {
       getSettingJson<{ bookingLink?: string }>('bot_settings', {}),
     ]);
     const bookingLink = botSettings.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30';
-    const resolvedPrompt = activePrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
+    let resolvedPrompt = activePrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
+    if (convo?.post_context) {
+      resolvedPrompt += `\n\nCONTEXT: This lead came from a post about "${convo.post_context}". Keep this topic in mind and reference it naturally when relevant.`;
+    }
 
     const aiReply = await generateReply(resolvedPrompt, history);
     await appendMessage(user_id, 'assistant', aiReply);

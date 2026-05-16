@@ -27,6 +27,7 @@ export async function getConversation(user_id: string): Promise<Conversation | n
     platform: convo.platform as Platform,
     source: convo.source as Source,
     started_from_comment: convo.started_from_comment,
+    post_context: convo.post_context,
     status: convo.status,
     funnel_step: convo.funnel_step,
     last_activity: convo.last_activity.getTime(),
@@ -44,6 +45,7 @@ export async function upsertConversation(params: {
   platform: Platform;
   source: Source;
   started_from_comment?: string | null;
+  post_context?: string | null;
 }): Promise<void> {
   await db
     .insert(conversations)
@@ -53,6 +55,7 @@ export async function upsertConversation(params: {
       platform: params.platform,
       source: params.source,
       started_from_comment: params.started_from_comment ?? null,
+      post_context: params.post_context ?? null,
       last_activity: new Date(),
     })
     .onConflictDoUpdate({
@@ -60,6 +63,7 @@ export async function upsertConversation(params: {
       set: {
         first_name: params.first_name,
         last_activity: new Date(),
+        // post_context intentionally not overwritten — keep the original post that started the convo
       },
     });
 }
