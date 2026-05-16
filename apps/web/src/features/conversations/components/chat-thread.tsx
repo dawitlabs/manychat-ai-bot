@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,11 @@ export function ChatThread({ lead }: ChatThreadProps) {
   }
 
   const sortedMessages = [...lead.messages].sort((a, b) => a.timestamp - b.timestamp);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [lead.user_id, sortedMessages.length]);
 
   return (
     <div className='flex h-full flex-col'>
@@ -70,8 +76,8 @@ export function ChatThread({ lead }: ChatThreadProps) {
       </div>
 
       {/* Messages */}
-      <ScrollArea className='flex-1 px-4 py-3'>
-        <div className='flex flex-col gap-3'>
+      <ScrollArea className='flex-1 min-h-0 overflow-hidden px-4 py-3'>
+        <div className='flex flex-col gap-3 pb-2'>
           {sortedMessages.map((msg, i) => {
             const isAI = msg.role === 'assistant';
             return (
@@ -103,6 +109,7 @@ export function ChatThread({ lead }: ChatThreadProps) {
               </div>
             );
           })}
+          <div ref={bottomRef} />
         </div>
       </ScrollArea>
     </div>
