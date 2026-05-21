@@ -7,6 +7,7 @@ import {
   Instrument_Sans,
   Inter,
   JetBrains_Mono,
+  Lexend,
   Merriweather,
   Mulish,
   Playfair_Display,
@@ -90,6 +91,12 @@ const fontPlayfairDisplay = Playfair_Display({
   variable: '--font-playfair-display'
 });
 
+const fontLexend = Lexend({
+  subsets: ['latin'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-lexend'
+});
+
 export const fontVariables = cn(
   fontSans.variable,
   fontMono.variable,
@@ -104,5 +111,6 @@ export const fontVariables = cn(
   fontSpaceMono.variable,
   fontJetBrainsMono.variable,
   fontMerriweather.variable,
-  fontPlayfairDisplay.variable
+  fontPlayfairDisplay.variable,
+  fontLexend.variable
 );

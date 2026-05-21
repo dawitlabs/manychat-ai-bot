@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { deleteConversation } from '../services/conversation-store';
+import { deleteConversation, deleteAllConversations } from '../services/conversation-store';
 
 const router = Router();
 
@@ -13,6 +13,11 @@ router.post('/reset', async (req: Request, res: Response) => {
     return;
   }
   await deleteConversation(parsed.data.user_id);
+  res.json({ success: true });
+});
+
+router.post('/reset-all', async (_req: Request, res: Response) => {
+  await deleteAllConversations();
   res.json({ success: true });
 });
 

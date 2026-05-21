@@ -87,6 +87,10 @@ export async function deleteConversation(user_id: string): Promise<void> {
   await db.delete(conversations).where(eq(conversations.user_id, user_id));
 }
 
+export async function deleteAllConversations(): Promise<void> {
+  await db.delete(conversations);
+}
+
 export interface ApiConversationResponse {
   user_id: string;
   first_name: string | null;

@@ -82,6 +82,11 @@ export async function saveBotSettings(data: Partial<ApiBotSettings>): Promise<vo
   });
 }
 
+export async function resetAllConversations(): Promise<void> {
+  const res = await fetch(`${PROXY}/reset-all`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to reset conversations');
+}
+
 export async function updateLeadStatus(user_id: string, status: string, funnelStep?: number): Promise<void> {
   await fetch(`${PROXY}/leads/${encodeURIComponent(user_id)}/status`, {
     method: 'PUT',

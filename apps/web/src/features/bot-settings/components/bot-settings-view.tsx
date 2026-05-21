@@ -30,7 +30,7 @@ import {
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { useBotSettings, saveBotSettings } from '@/lib/api-client';
+import { useBotSettings, saveBotSettings, resetAllConversations } from '@/lib/api-client';
 
 const ENDPOINTS = [
   { method: 'POST', path: '/webhook', description: 'DM conversations from ManyChat' },
@@ -276,7 +276,7 @@ export function BotSettingsView() {
                   size='icon'
                   className='h-7 w-7 flex-shrink-0'
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://your-api.railway.app${ep.path}`);
+                    navigator.clipboard.writeText(`https://kyle-api.onrender.com${ep.path}`);
                     toast.success('Copied!');
                   }}
                 >
@@ -316,7 +316,16 @@ export function BotSettingsView() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => toast.error('Conversations reset', { description: 'All history cleared' })}
+                    onClick={async () => {
+                      try {
+                        await resetAllConversations();
+                        qc.invalidateQueries({ queryKey: ['conversations'] });
+                        qc.invalidateQueries({ queryKey: ['stats'] });
+                        toast.success('Conversations reset', { description: 'All history cleared' });
+                      } catch {
+                        toast.error('Failed to reset conversations');
+                      }
+                    }}
                     className='bg-destructive hover:bg-destructive/90'
                   >
                     Reset All
@@ -344,7 +353,16 @@ export function BotSettingsView() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => toast.error('Analytics cleared')}
+                    onClick={async () => {
+                      try {
+                        await resetAllConversations();
+                        qc.invalidateQueries({ queryKey: ['conversations'] });
+                        qc.invalidateQueries({ queryKey: ['stats'] });
+                        toast.success('Analytics cleared', { description: 'All stats and history reset' });
+                      } catch {
+                        toast.error('Failed to clear analytics');
+                      }
+                    }}
                     className='bg-destructive hover:bg-destructive/90'
                   >
                     Clear Data
