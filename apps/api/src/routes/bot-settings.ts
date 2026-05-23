@@ -4,8 +4,8 @@ import { getSettingJson, setSettingJson } from '../services/settings-store';
 const DEFAULTS = {
   botActive: true,
   model: 'gpt-4o-mini',
-  maxTokens: 300,
-  temperature: 0.7,
+  maxTokens: 220,
+  temperature: 0.4,
   maxHistory: 40,
   bookingLink: 'https://calendly.com/kyle-briere-largedumbbells/30',
 };

@@ -5,6 +5,7 @@ import { generateReply, classifyConversation } from '../services/openai-client';
 import { SYSTEM_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
+import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
 
 const router = Router();
 
@@ -45,15 +46,21 @@ router.post('/webhook', webhookLimiter, async (req: Request, res: Response) => {
     }
 
     const aiReply = await generateReply(resolvedPrompt, history);
-    await appendMessage(user_id, 'assistant', aiReply);
+    const aiMessages = formatKyleReply(aiReply);
+    for (const aiMessage of aiMessages) {
+      await appendMessage(user_id, 'assistant', aiMessage);
+    }
 
-    const fullHistory = [...history, { role: 'assistant' as const, content: aiReply }];
+    const fullHistory = [
+      ...history,
+      ...aiMessages.map((content) => ({ role: 'assistant' as const, content })),
+    ];
     const { funnelStep, status } = await classifyConversation(fullHistory);
     await updateConversationStatus(user_id, status, funnelStep);
 
-    console.log(`[${new Date().toISOString()}] AI reply to ${user_id}: ${aiReply}`);
+    console.log(`[${new Date().toISOString()}] AI reply to ${user_id}: ${aiMessages.join(' | ')}`);
 
-    res.json({ version: 'v2', content: { messages: [{ type: 'text', text: aiReply }] } });
+    res.json({ version: 'v2', content: { messages: toManyChatTextMessages(aiMessages) } });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Webhook error:`, (err as Error).message);
     res.json({ version: 'v2', content: { messages: [{ type: 'text', text: "Sorry, I'm having trouble right now. Please try again in a moment!" }] } });

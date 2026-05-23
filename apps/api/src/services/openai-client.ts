@@ -10,7 +10,7 @@ interface BotSettings {
   temperature: number;
 }
 
-const SETTING_DEFAULTS: BotSettings = { model: 'gpt-4o-mini', maxTokens: 300, temperature: 0.7 };
+const SETTING_DEFAULTS: BotSettings = { model: 'gpt-4o-mini', maxTokens: 220, temperature: 0.4 };
 
 export interface Classification {
   funnelStep: 1 | 2 | 3 | 4 | 5 | 6;

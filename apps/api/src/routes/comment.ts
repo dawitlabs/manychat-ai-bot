@@ -5,6 +5,7 @@ import { generateReply } from '../services/openai-client';
 import { COMMENT_REPLY_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
+import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
 
 const router = Router();
 
@@ -41,8 +42,9 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
     const aiReply = await generateReply(
       resolvedPrompt,
       [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}". ${postLine} Write the opening DM.` }],
-      { maxTokens: 200, temperature: 0.8 },
+      { maxTokens: 160, temperature: 0.35 },
     );
+    const aiMessages = formatKyleReply(aiReply, { maxMessages: 2 });
 
     await upsertConversation({
       user_id,
@@ -52,11 +54,13 @@ router.post('/comment', webhookLimiter, async (req: Request, res: Response) => {
       started_from_comment: comment_text,
       post_context: post_context ?? null,
     });
-    await appendMessage(user_id, 'assistant', aiReply);
+    for (const aiMessage of aiMessages) {
+      await appendMessage(user_id, 'assistant', aiMessage);
+    }
 
-    console.log(`[${new Date().toISOString()}] Opening DM to ${user_id}: ${aiReply}`);
+    console.log(`[${new Date().toISOString()}] Opening DM to ${user_id}: ${aiMessages.join(' | ')}`);
 
-    res.json({ version: 'v2', content: { messages: [{ type: 'text', text: aiReply }] } });
+    res.json({ version: 'v2', content: { messages: toManyChatTextMessages(aiMessages) } });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Comment error:`, (err as Error).message);
     res.json({ version: 'v2', content: { messages: [{ type: 'text', text: 'Hey! Thanks for your comment 😊 How can I help you?' }] } });
