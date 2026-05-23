@@ -6,6 +6,7 @@ import { SYSTEM_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
 import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
+import { getDirectAnswer } from '../services/direct-answers';
 
 const router = Router();
 
@@ -34,6 +35,24 @@ router.post('/webhook', webhookLimiter, async (req: Request, res: Response) => {
 
     const convo = await getConversation(user_id);
     const history = convo?.messages.map((m) => ({ role: m.role, content: m.content })) ?? [{ role: 'user' as const, content: message }];
+    const directAnswer = getDirectAnswer(message);
+    if (directAnswer) {
+      for (const aiMessage of directAnswer) {
+        await appendMessage(user_id, 'assistant', aiMessage);
+      }
+
+      const fullHistory = [
+        ...history,
+        ...directAnswer.map((content) => ({ role: 'assistant' as const, content })),
+      ];
+      const { funnelStep, status } = await classifyConversation(fullHistory);
+      await updateConversationStatus(user_id, status, funnelStep);
+
+      console.log(`[${new Date().toISOString()}] Direct reply to ${user_id}: ${directAnswer.join(' | ')}`);
+
+      res.json({ version: 'v2', content: { messages: toManyChatTextMessages(directAnswer) } });
+      return;
+    }
 
     const [activePrompt, botSettings] = await Promise.all([
       getSettingJson<string>('system_prompt', SYSTEM_PROMPT),
