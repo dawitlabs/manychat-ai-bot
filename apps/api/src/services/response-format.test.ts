@@ -26,10 +26,11 @@ https://calendly.com/kyle-briere-largedumbbells/30
 My calendar has limited space so make sure you book a time now.
 Let me know once you booked.`, { maxMessages: 3 });
 
+    // URL is merged into the preceding bubble so Instagram delivers it in one message
     assert.deepEqual(messages, [
-      "Sounds good. Here's the booking link:",
-      'https://calendly.com/kyle-briere-largedumbbells/30',
+      "Sounds good. Here's the booking link:\nhttps://calendly.com/kyle-briere-largedumbbells/30",
       'My calendar has limited space so make sure you book a time now.',
+      'Let me know once you booked.',
     ]);
   });
 

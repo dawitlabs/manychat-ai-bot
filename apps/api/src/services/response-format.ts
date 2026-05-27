@@ -24,7 +24,6 @@ function normalizeReply(raw: string): string {
     .replace(/\r/g, '\n')
     .replace(/```[\s\S]*?```/g, '')
     .replace(/(?:^|\n)\s*(?:Kyle|Message\s*\d+)\s*:\s*/gi, '\n')
-    .replace(/(https:\/\/calendly\.com\/[^\s"')]+)/gi, '\n$1\n')
     .trim();
 }
 
@@ -75,7 +74,18 @@ export function formatKyleReply(
     .filter((line) => line.length > 0)
     .filter((line) => !/\b(as an ai|i am an ai|i'm an ai|ai assistant)\b/i.test(line));
 
-  const splitMessages = cleaned.flatMap((message) => splitOverlongMessage(message, maxChars));
+  // Merge standalone URLs into the preceding bubble so Instagram delivers the link
+  const merged: string[] = [];
+  for (const line of cleaned) {
+    const isUrl = /^https?:\/\/\S+$/.test(line);
+    if (isUrl && merged.length > 0) {
+      merged[merged.length - 1] = `${merged[merged.length - 1]}\n${line}`;
+    } else {
+      merged.push(line);
+    }
+  }
+
+  const splitMessages = merged.flatMap((message) => splitOverlongMessage(message, maxChars));
   const limited = limitMessages(splitMessages, maxMessages);
 
   return limited.length > 0 ? limited : [fallback];
