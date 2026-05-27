@@ -51,33 +51,39 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
   // Record in DB first — always succeeds even if ManyChat is not configured
   await appendMessage(user_id, 'assistant', text);
 
-  // Attempt delivery via ManyChat Send API if key is configured
+  // Attempt delivery via ManyChat: set custom field then trigger Send Custom Reply flow
+  const SEND_FLOW_NS = 'content20260527181536_194635';
   let delivered = false;
   if (env.MANYCHAT_API_KEY) {
     try {
-      const mcRes = await fetch('https://api.manychat.com/fb/sending/sendContent', {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${env.MANYCHAT_API_KEY}`,
+      };
+
+      // 1. Set ai_response custom field to the message text
+      const fieldRes = await fetch('https://api.manychat.com/fb/subscriber/setCustomFieldByName', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${env.MANYCHAT_API_KEY}`,
-        },
-        body: JSON.stringify({
-          subscriber_id: user_id,
-          data: {
-            version: 'v2',
-            content: { messages: [{ type: 'text', text }] },
-          },
-        }),
+        headers,
+        body: JSON.stringify({ subscriber_id: user_id, field_name: 'ai_response', field_value: text }),
       });
-      if (mcRes.ok) {
-        delivered = true;
+
+      if (!fieldRes.ok) {
+        const body = await fieldRes.text().catch(() => '');
+        rlog.warn('ManyChat setCustomField failed', { user_id, status: fieldRes.status, body });
       } else {
-        const body = await mcRes.text().catch(() => '');
-        const isWindowClosed = body.includes('3011') || body.includes('24 hours');
-        rlog.warn('ManyChat send failed', { user_id, status: mcRes.status, body, isWindowClosed });
-        if (isWindowClosed) {
-          res.json({ ok: true, delivered: false, manychatConfigured: true, windowClosed: true });
-          return;
+        // 2. Trigger the Send Custom Reply flow
+        const flowRes = await fetch('https://api.manychat.com/fb/sending/sendFlow', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ subscriber_id: user_id, flow_ns: SEND_FLOW_NS }),
+        });
+
+        if (flowRes.ok) {
+          delivered = true;
+        } else {
+          const body = await flowRes.text().catch(() => '');
+          rlog.warn('ManyChat sendFlow failed', { user_id, status: flowRes.status, body });
         }
       }
     } catch (err) {
