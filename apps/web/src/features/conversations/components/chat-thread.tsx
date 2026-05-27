@@ -138,7 +138,16 @@ export function ChatThread({ lead }: ChatThreadProps) {
                         : 'bg-muted text-foreground rounded-tr-sm'
                     }`}
                   >
-                    {msg.content}
+                    {msg.content.split('\n').map((line, j) =>
+                      /^https?:\/\/\S+$/.test(line.trim()) ? (
+                        <a key={j} href={line.trim()} target='_blank' rel='noopener noreferrer'
+                          className='underline break-all block'>
+                          {line.trim()}
+                        </a>
+                      ) : (
+                        <span key={j} className='block'>{line}</span>
+                      )
+                    )}
                   </div>
                   <p className='text-muted-foreground mt-1 px-1 text-xs'>
                     {format(new Date(msg.timestamp), 'MMM d, h:mm a')}
