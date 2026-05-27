@@ -23,6 +23,7 @@ import { log } from './lib/logger';
 
 const app = express();
 
+app.set('trust proxy', 1); // Render sits behind a proxy; needed for rate-limit IP extraction
 app.use(helmet());
 app.use(corsMiddleware);
 app.use(requestId);
