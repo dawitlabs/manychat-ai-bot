@@ -86,15 +86,17 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
           ...history,
           ...directAnswer.map((content) => ({ role: 'assistant' as const, content })),
         ];
-        const classification = await classifyConversation(fullHistory);
-        if (classification) {
-          const { previousStatus, currentStatus } = await updateConversationStatus(user_id, classification.status, classification.funnelStep);
-          if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
-            void notifyBooking({ user_id, first_name: first_name ?? null, platform });
-          }
-        } else {
-          rlog.warn('classify failed — status preserved', { user_id });
-        }
+        // classify in background — don't block the ManyChat response
+        void classifyConversation(fullHistory).then((classification) => {
+          if (!classification) { rlog.warn('classify failed — status preserved', { user_id }); return; }
+          return updateConversationStatus(user_id, classification.status, classification.funnelStep).then(
+            ({ previousStatus, currentStatus }) => {
+              if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
+                void notifyBooking({ user_id, first_name: first_name ?? null, platform });
+              }
+            },
+          );
+        }).catch((err) => rlog.error('classify bg error', { user_id, msg: (err as Error).message }));
 
         if (env.LOG_LEVEL === 'debug') {
           rlog.debug('Direct reply sent', { user_id, reply: directAnswer.join(' | ') });
@@ -123,15 +125,17 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         ...history,
         ...aiMessages.map((content) => ({ role: 'assistant' as const, content })),
       ];
-      const classification = await classifyConversation(fullHistory);
-      if (classification) {
-        const { previousStatus, currentStatus } = await updateConversationStatus(user_id, classification.status, classification.funnelStep);
-        if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
-          void notifyBooking({ user_id, first_name: first_name ?? null, platform });
-        }
-      } else {
-        rlog.warn('classify failed — status preserved', { user_id });
-      }
+      // classify in background — don't block the ManyChat response
+      void classifyConversation(fullHistory).then((classification) => {
+        if (!classification) { rlog.warn('classify failed — status preserved', { user_id }); return; }
+        return updateConversationStatus(user_id, classification.status, classification.funnelStep).then(
+          ({ previousStatus, currentStatus }) => {
+            if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
+              void notifyBooking({ user_id, first_name: first_name ?? null, platform });
+            }
+          },
+        );
+      }).catch((err) => rlog.error('classify bg error', { user_id, msg: (err as Error).message }));
 
       if (env.LOG_LEVEL === 'debug') {
         rlog.debug('AI reply sent', { user_id, reply: aiMessages.join(' | ') });
