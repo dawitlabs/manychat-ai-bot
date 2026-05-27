@@ -62,10 +62,12 @@ export function ChatThread({ lead }: ChatThreadProps) {
       setDraft('');
       if (result.delivered) {
         toast.success('Message sent via ManyChat');
+      } else if ((result as any).windowClosed) {
+        toast.warning('Message saved — Instagram 24h window closed. Send from ManyChat live chat instead.');
       } else if (result.manychatConfigured) {
-        toast.warning('Message recorded — ManyChat delivery failed');
+        toast.warning('Message saved — ManyChat delivery failed');
       } else {
-        toast.info('Message recorded (MANYCHAT_API_KEY not configured — not delivered)');
+        toast.info('Message saved (ManyChat not configured — not delivered)');
       }
     } catch {
       toast.error('Failed to send message');

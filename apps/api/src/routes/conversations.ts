@@ -73,7 +73,12 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
         delivered = true;
       } else {
         const body = await mcRes.text().catch(() => '');
-        rlog.warn('ManyChat send failed', { user_id, status: mcRes.status, body });
+        const isWindowClosed = body.includes('3011') || body.includes('24 hours');
+        rlog.warn('ManyChat send failed', { user_id, status: mcRes.status, body, isWindowClosed });
+        if (isWindowClosed) {
+          res.json({ ok: true, delivered: false, manychatConfigured: true, windowClosed: true });
+          return;
+        }
       }
     } catch (err) {
       rlog.warn('ManyChat send error', { user_id, msg: (err as Error).message });
