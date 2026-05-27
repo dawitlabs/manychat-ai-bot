@@ -21,6 +21,7 @@ interface Integration {
   iconEl: React.ReactNode;
   actionLabel: string;
   webhookUrl?: string;
+  actionUrl?: string;
 }
 
 function IntegrationCard({ integration }: { integration: Integration }) {
@@ -28,8 +29,8 @@ function IntegrationCard({ integration }: { integration: Integration }) {
     if (integration.webhookUrl) {
       navigator.clipboard.writeText(integration.webhookUrl);
       toast.success('Webhook URL copied!');
-    } else {
-      toast.info(`${integration.name} configuration coming soon`);
+    } else if (integration.actionUrl) {
+      window.open(integration.actionUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -118,7 +119,8 @@ export function IntegrationsView() {
       lastSync: latestActivity,
       iconBg: 'bg-slate-700',
       iconEl: <Icons.activity className='h-5 w-5 text-white' />,
-      actionLabel: 'View health'
+      actionLabel: 'View health',
+      actionUrl: `${process.env.NEXT_PUBLIC_API_URL ?? ''}/health`,
     },
     {
       id: 'manychat',
@@ -130,7 +132,8 @@ export function IntegrationsView() {
       lastSync: latestActivity,
       iconBg: 'bg-blue-500',
       iconEl: <Icons.messageCircle className='h-5 w-5 text-white' />,
-      actionLabel: 'Configure'
+      actionLabel: 'Configure',
+      actionUrl: 'https://app.manychat.com',
     },
     {
       id: 'instagram',
@@ -142,7 +145,8 @@ export function IntegrationsView() {
       lastSync: latestActivity,
       iconBg: 'bg-gradient-to-br from-pink-500 to-purple-600',
       iconEl: <Icons.instagram className='h-5 w-5 text-white' />,
-      actionLabel: 'View'
+      actionLabel: 'View',
+      actionUrl: 'https://www.instagram.com/largedumbbells/',
     },
     {
       id: 'facebook',
@@ -154,7 +158,8 @@ export function IntegrationsView() {
       lastSync: latestActivity,
       iconBg: 'bg-blue-600',
       iconEl: <Icons.facebook className='h-5 w-5 text-white' />,
-      actionLabel: 'View'
+      actionLabel: 'View',
+      actionUrl: 'https://www.facebook.com/profile.php?id=61575107498498',
     },
     {
       id: 'openai',
@@ -166,7 +171,8 @@ export function IntegrationsView() {
       lastSync: latestActivity,
       iconBg: 'bg-emerald-600',
       iconEl: <Icons.sparkles className='h-5 w-5 text-white' />,
-      actionLabel: 'Change model'
+      actionLabel: 'Change model',
+      actionUrl: 'https://platform.openai.com/usage',
     },
     {
       id: 'calendly',
@@ -178,7 +184,8 @@ export function IntegrationsView() {
       lastSync: latestActivity,
       iconBg: 'bg-teal-600',
       iconEl: <Icons.calendar className='h-5 w-5 text-white' />,
-      actionLabel: 'View calendar'
+      actionLabel: 'View calendar',
+      actionUrl: 'https://calendly.com/kyle-briere-largedumbbells/30',
     },
     {
       id: 'webhook',
