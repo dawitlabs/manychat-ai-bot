@@ -103,7 +103,9 @@ import {
   IconWifi,
   IconWifiOff,
   IconX,
-  IconBolt
+  IconBolt,
+  IconPlayerPause,
+  IconPlayerPlay,
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -165,6 +167,8 @@ export const Icons = {
   phone: IconPhone,
   video: IconVideo,
   send: IconSend,
+  pause: IconPlayerPause,
+  play: IconPlayerPlay,
   paperclip: IconPaperclip,
 
   // Files

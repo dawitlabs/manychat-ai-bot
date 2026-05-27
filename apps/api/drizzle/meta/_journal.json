@@ -8,6 +8,34 @@
       "when": 1778687541658,
       "tag": "0000_productive_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779871839670,
+      "tag": "0001_wandering_matthew_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748390400000,
+      "tag": "0002_token_version_and_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1748476800000,
+      "tag": "0003_admin_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779926400000,
+      "tag": "0004_add_paused",
+      "breakpoints": true
     }
   ]
 }

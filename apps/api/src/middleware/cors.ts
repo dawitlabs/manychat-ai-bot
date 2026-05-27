@@ -1,19 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { env } from '../config/env';
 
-const allowedOrigins = new Set(
-  env.WEB_ORIGIN
-    ? env.WEB_ORIGIN.split(',').map((o) => o.trim())
-    : ['*'],
-);
+const allowedOrigins = new Set(env.WEB_ORIGIN.split(',').map((o) => o.trim()));
 
 export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
   const origin = req.headers.origin ?? '';
-  const allow = allowedOrigins.has('*') || allowedOrigins.has(origin) ? origin || '*' : '';
-
-  if (allow) res.setHeader('Access-Control-Allow-Origin', allow);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+  if (allowedOrigins.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-key, x-csrf-token, x-request-id');
+  res.setHeader('Access-Control-Expose-Headers', 'X-Request-Id');
 
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);

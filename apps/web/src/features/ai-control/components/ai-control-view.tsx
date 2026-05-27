@@ -144,7 +144,7 @@ export function AIControlView() {
   const { data: promptsData } = usePrompts();
   const { data: settingsData } = useBotSettings();
 
-  const [funnelSteps, setFunnelSteps] = React.useState(DEFAULT_FUNNEL_STEPS);
+  const funnelSteps = DEFAULT_FUNNEL_STEPS;
   const [systemPromptDraft, setSystemPrompt] = React.useState<string | null>(null);
   const [commentPromptDraft, setCommentPrompt] = React.useState<string | null>(null);
   const [bookingLinkDraft, setBookingLink] = React.useState<string | null>(null);
@@ -189,12 +189,6 @@ export function AIControlView() {
     }
   };
 
-  const updateStep = (step: number, script: string) => {
-    setFunnelSteps((prev) =>
-      prev.map((s) => (s.step === step ? { ...s, script } : s))
-    );
-  };
-
   return (
     <Tabs defaultValue='funnel' className='space-y-4'>
       <TabsList className='grid w-full grid-cols-4'>
@@ -206,6 +200,9 @@ export function AIControlView() {
 
       {/* Funnel Steps */}
       <TabsContent value='funnel' className='space-y-4'>
+        <p className='text-muted-foreground/60 text-xs'>
+          The funnel script is encoded in the System Prompt — edit there to change bot behaviour.
+        </p>
         <div className='grid gap-4 md:grid-cols-2'>
           {funnelSteps.map((step) => (
             <Card key={step.step}>
@@ -215,21 +212,8 @@ export function AIControlView() {
                   <CardTitle className='text-base'>{step.title}</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className='space-y-3'>
-                <Textarea
-                  value={step.script}
-                  onChange={(e) => updateStep(step.step, e.target.value)}
-                  rows={5}
-                  className='resize-none text-sm'
-                />
-                <Button
-                  size='sm'
-                  onClick={() => toast.info('Funnel step labels are display-only — edit the System Prompt to change bot behaviour')}
-                  className='w-full'
-                >
-                  <Icons.check className='mr-2 h-3.5 w-3.5' />
-                  Save Step {step.step}
-                </Button>
+              <CardContent>
+                <p className='text-sm text-muted-foreground leading-relaxed'>{step.script}</p>
               </CardContent>
             </Card>
           ))}

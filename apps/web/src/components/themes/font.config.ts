@@ -13,6 +13,7 @@ import {
   Playfair_Display,
   Noto_Sans_Mono,
   Outfit,
+  Raleway,
   Space_Mono
 } from 'next/font/google';
 
@@ -97,6 +98,12 @@ const fontLexend = Lexend({
   variable: '--font-lexend'
 });
 
+const fontRaleway = Raleway({
+  subsets: ['latin'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-raleway'
+});
+
 export const fontVariables = cn(
   fontSans.variable,
   fontMono.variable,
@@ -112,5 +119,6 @@ export const fontVariables = cn(
   fontJetBrainsMono.variable,
   fontMerriweather.variable,
   fontPlayfairDisplay.variable,
-  fontLexend.variable
+  fontLexend.variable,
+  fontRaleway.variable
 );

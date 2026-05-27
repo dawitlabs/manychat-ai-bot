@@ -1,12 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Icons } from '@/components/icons';
-import { toast } from 'sonner';
 import { useLeads } from '@/lib/api-client';
 
 interface Objection {
@@ -64,8 +61,7 @@ const OBJECTIONS: Objection[] = [
 
 function countOccurrences(keywords: string[], leads: ReturnType<typeof useLeads>['leads']): number {
   if (keywords.length === 0) {
-    // For "no-reply": count stalled leads
-    return leads.filter((l) => l.status === 'Lost').length;
+    return leads.filter((l) => l.status === 'Archived').length;
   }
   let count = 0;
   for (const lead of leads) {
@@ -74,7 +70,7 @@ function countOccurrences(keywords: string[], leads: ReturnType<typeof useLeads>
         const lower = msg.content.toLowerCase();
         if (keywords.some((kw) => lower.includes(kw))) {
           count++;
-          break; // count per lead, not per message
+          break;
         }
       }
     }
@@ -83,15 +79,6 @@ function countOccurrences(keywords: string[], leads: ReturnType<typeof useLeads>
 }
 
 function ObjectionCard({ objection, count }: { objection: Objection; count: number }) {
-  const [response, setResponse] = React.useState(objection.response);
-  const [saved, setSaved] = React.useState(false);
-
-  const handleSave = () => {
-    setSaved(true);
-    toast.success('Objection handler saved', { description: 'Changes will apply to new conversations' });
-    setTimeout(() => setSaved(false), 2000);
-  };
-
   return (
     <Card className='bg-gradient-to-br from-card to-muted/20'>
       <CardHeader className='pb-3'>
@@ -101,7 +88,7 @@ function ObjectionCard({ objection, count }: { objection: Objection; count: numb
               <span className='text-muted-foreground font-normal'>Trigger: </span>
               {objection.trigger}
             </CardTitle>
-            <Badge variant='outline' className={`mt-2 text-[10px] px-1.5 py-0 ${count > 0 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'text-muted-foreground'}`}>
+            <Badge variant='outline' className={`mt-2 text-[10px] px-1.5 py-0 ${count > 0 ? 'bg-primary/10 text-primary border-primary/20' : 'text-muted-foreground'}`}>
               {count > 0 ? `Seen ${count}× in conversations` : 'Not seen yet'}
             </Badge>
           </div>
@@ -114,14 +101,11 @@ function ObjectionCard({ objection, count }: { objection: Objection; count: numb
           ))}
         </div>
       </CardHeader>
-      <CardContent className='space-y-3'>
+      <CardContent>
         <div>
           <p className='text-xs font-medium text-muted-foreground mb-1.5'>AI Response</p>
-          <Textarea value={response} onChange={(e) => setResponse(e.target.value)} rows={3} className='text-sm resize-none' />
+          <p className='text-sm text-foreground leading-relaxed'>{objection.response}</p>
         </div>
-        <Button size='sm' className='w-full' onClick={handleSave} variant={saved ? 'outline' : 'default'}>
-          {saved ? <><Icons.check className='mr-2 h-3.5 w-3.5 text-green-500' />Saved!</> : <><Icons.check className='mr-2 h-3.5 w-3.5' />Save Handler</>}
-        </Button>
       </CardContent>
     </Card>
   );
@@ -140,8 +124,14 @@ export function ObjectionsView() {
   return (
     <div className='space-y-4'>
       <div className='flex items-start justify-between'>
-        <p className='text-muted-foreground text-sm'>How Kyle&apos;s AI handles every pushback</p>
-        <Badge variant='outline' className='bg-green-500/10 text-green-400 border-green-500/20'>
+        <div>
+          <p className='text-muted-foreground text-sm'>How Kyle&apos;s AI handles every pushback</p>
+          <p className='text-muted-foreground/60 text-xs mt-0.5'>
+            To edit responses, update the System Prompt in{' '}
+            <a href='/dashboard/ai-control' className='underline underline-offset-2 hover:text-foreground'>AI Control</a>.
+          </p>
+        </div>
+        <Badge variant='outline' className='bg-primary/10 text-primary border-primary/20'>
           <Icons.sparkles className='mr-1 h-3 w-3' />
           {totalSeen > 0 ? `${totalSeen} objections handled` : '6 handlers active'}
         </Badge>

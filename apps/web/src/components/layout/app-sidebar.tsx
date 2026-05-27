@@ -41,8 +41,16 @@ export default function AppSidebar() {
     <Sidebar collapsible='icon'>
       <SidebarHeader className='py-4 px-3'>
         <div className='flex items-center gap-3'>
-          <div className='relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg flex-shrink-0'>
-            <Icons.sparkles className='size-4 text-white' />
+          <div className='relative flex-shrink-0'>
+            <div className='relative h-9 w-9 rounded-xl overflow-hidden shadow-lg bg-[#cd853f]'>
+              <img
+                src='https://img1.wsimg.com/isteam/ip/c7b141a3-7808-46ba-98e2-793d60c5f411/IMG_0897.jpeg'
+                alt='Kyle Briere'
+                className='h-full w-full object-cover object-top'
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+              <span className='absolute inset-0 flex items-center justify-center text-white font-bold text-sm pointer-events-none select-none' aria-hidden>KB</span>
+            </div>
             <span className='absolute -top-0.5 -right-0.5 flex h-3 w-3'>
               <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75' />
               <span className='relative inline-flex h-3 w-3 rounded-full bg-green-500' />

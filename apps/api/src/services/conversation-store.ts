@@ -1,4 +1,4 @@
-import { eq, desc, asc, inArray } from 'drizzle-orm';
+import { eq, desc, asc, inArray, lt, notInArray, and, SQL } from 'drizzle-orm';
 import { db } from '../db/client';
 import { conversations, messages } from '../db/schema';
 import type { Conversation, Platform, Source } from '../domain/conversation';
@@ -30,6 +30,7 @@ export async function getConversation(user_id: string): Promise<Conversation | n
     post_context: convo.post_context,
     status: convo.status,
     funnel_step: convo.funnel_step,
+    paused: convo.paused,
     last_activity: convo.last_activity.getTime(),
     messages: msgs.reverse().map((m) => ({
       role: m.role as 'user' | 'assistant',
@@ -69,17 +70,64 @@ export async function upsertConversation(params: {
 }
 
 export async function appendMessage(user_id: string, role: 'user' | 'assistant', content: string): Promise<void> {
-  await db.insert(messages).values({ user_id, role, content });
-  await db
-    .update(conversations)
-    .set({ last_activity: new Date() })
-    .where(eq(conversations.user_id, user_id));
+  await db.transaction(async (tx) => {
+    await tx.insert(messages).values({ user_id, role, content });
+    await tx.update(conversations).set({ last_activity: new Date() }).where(eq(conversations.user_id, user_id));
+  });
 }
 
-export async function updateConversationStatus(user_id: string, status: string, funnel_step?: number): Promise<void> {
-  await db
+export async function updateConversationStatus(
+  user_id: string,
+  status: string,
+  funnel_step?: number,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dbClient: any = db,
+): Promise<{ previousStatus: string; currentStatus: string }> {
+  const [row] = await dbClient
+    .select({ status: conversations.status })
+    .from(conversations)
+    .where(eq(conversations.user_id, user_id))
+    .limit(1);
+
+  const previousStatus = row?.status ?? status;
+
+  await dbClient
     .update(conversations)
     .set({ status, ...(funnel_step !== undefined ? { funnel_step } : {}) })
+    .where(eq(conversations.user_id, user_id));
+
+  return { previousStatus, currentStatus: status };
+}
+
+export async function markExpiredConversations(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dbClient: any = db,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  settingsReader: (key: string, defaults: any) => Promise<any> = getSettingJson,
+): Promise<void> {
+  const { ttl } = await settingsReader('bot_settings', {});
+  const ttlMs = (ttl ?? 23) * 60 * 60 * 1000;
+  const cutoff = new Date(Date.now() - ttlMs);
+  await dbClient
+    .update(conversations)
+    .set({ status: 'Archived' })
+    .where(
+      and(
+        notInArray(conversations.status, ['Booked', 'Archived']),
+        lt(conversations.last_activity, cutoff),
+      ),
+    );
+}
+
+export async function setConversationPaused(
+  user_id: string,
+  paused: boolean,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dbClient: any = db,
+): Promise<void> {
+  await dbClient
+    .update(conversations)
+    .set({ paused })
     .where(eq(conversations.user_id, user_id));
 }
 
@@ -99,14 +147,22 @@ export interface ApiConversationResponse {
   startedFromComment: string | null;
   status: string;
   funnelStep: number;
+  paused: boolean;
   lastActivity: number;
   messages: Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>;
 }
 
-export async function getAllConversations(): Promise<ApiConversationResponse[]> {
-  const convos = await db.query.conversations.findMany({
-    orderBy: (c) => [desc(c.last_activity)],
-  });
+export async function getAllConversations(opts: { limit?: number; cursor?: number } = {}): Promise<ApiConversationResponse[]> {
+  const limit = Math.min(opts.limit ?? 50, 200);
+  const conditions: SQL[] = [];
+  if (opts.cursor) conditions.push(lt(conversations.last_activity, new Date(opts.cursor)));
+
+  const convos = await db
+    .select()
+    .from(conversations)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(conversations.last_activity))
+    .limit(limit);
   if (convos.length === 0) return [];
 
   const userIds = convos.map((c) => c.user_id);
@@ -131,6 +187,7 @@ export async function getAllConversations(): Promise<ApiConversationResponse[]> 
     startedFromComment: convo.started_from_comment,
     status: convo.status,
     funnelStep: convo.funnel_step,
+    paused: convo.paused,
     lastActivity: convo.last_activity.getTime(),
     messages: (msgsByUser.get(convo.user_id) ?? []).map((m) => ({
       role: m.role as 'user' | 'assistant',

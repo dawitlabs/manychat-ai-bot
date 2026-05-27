@@ -1,38 +1,41 @@
 export const COOKIE_NAME = 'kyle-ai-session';
 export const MAX_AGE = 60 * 60 * 24 * 7;
 
-function getSecret(): string {
-  return process.env.AUTH_SECRET ?? 'fallback-dev-secret-change-in-production';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET environment variable is required');
+  return secret;
 }
 
-async function hmac(data: string, secret: string): Promise<string> {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
-  return Buffer.from(sig).toString('base64url');
-}
-
-export async function signSession(): Promise<string> {
-  const payload = Buffer.from(JSON.stringify({ exp: Date.now() + MAX_AGE * 1000 })).toString('base64url');
-  const sig = await hmac(payload, getSecret());
-  return `${payload}.${sig}`;
-}
-
-export async function verifySession(token: string): Promise<boolean> {
+async function verifyJwt(token: string): Promise<boolean> {
   try {
-    const [payload, sig] = token.split('.');
-    if (!payload || !sig) return false;
-    const expected = await hmac(payload, getSecret());
-    if (expected !== sig) return false;
-    const { exp } = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    return Date.now() < exp;
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    const [header, payload, sig] = parts;
+
+    const { alg, typ } = JSON.parse(Buffer.from(header, 'base64url').toString()) as Record<string, unknown>;
+    if (alg !== 'HS256' || typ !== 'JWT') return false;
+
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      enc.encode(getJwtSecret()),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify'],
+    );
+    const sigBytes = Buffer.from(sig, 'base64url');
+    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(`${header}.${payload}`));
+    if (!valid) return false;
+
+    const { exp, sub } = JSON.parse(Buffer.from(payload, 'base64url').toString()) as Record<string, unknown>;
+    if (typeof sub !== 'string' || !sub) return false;
+    return typeof exp === 'number' && Date.now() / 1000 < exp;
   } catch {
     return false;
   }
+}
+
+export async function verifySession(token: string): Promise<boolean> {
+  return verifyJwt(token);
 }

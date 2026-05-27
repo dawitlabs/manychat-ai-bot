@@ -30,7 +30,7 @@ import {
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { useBotSettings, saveBotSettings, resetAllConversations } from '@/lib/api-client';
+import { useBotSettings, saveBotSettings, resetAllConversations, resetAnalytics } from '@/lib/api-client';
 
 const ENDPOINTS = [
   { method: 'POST', path: '/webhook', description: 'DM conversations from ManyChat' },
@@ -47,24 +47,24 @@ const methodColor: Record<string, string> = {
 
 export function BotSettingsView() {
   const qc = useQueryClient();
-  const { data: settingsData } = useBotSettings();
+  const { data: settingsData, isLoading: settingsLoading } = useBotSettings();
 
-  const [botActive, setBotActive] = React.useState(true);
-  const [model, setModel] = React.useState('gpt-4o-mini');
-  const [maxTokens, setMaxTokens] = React.useState([300]);
-  const [temperature, setTemperature] = React.useState([0.7]);
-  const [ttl, setTtl] = React.useState('23');
-  const [maxHistory, setMaxHistory] = React.useState('20');
-  const [bookingLink, setBookingLink] = React.useState('https://calendly.com/kyle-briere-largedumbbells/30');
+  const [botActive, setBotActive] = React.useState<boolean | undefined>(undefined);
+  const [model, setModel] = React.useState<string | undefined>(undefined);
+  const [maxTokens, setMaxTokens] = React.useState<number[] | undefined>(undefined);
+  const [temperature, setTemperature] = React.useState<number[] | undefined>(undefined);
+  const [ttl, setTtl] = React.useState<string | undefined>(undefined);
+  const [maxHistory, setMaxHistory] = React.useState<string | undefined>(undefined);
+  const [bookingLink, setBookingLink] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
     if (!settingsData) return;
     setBotActive(settingsData.botActive ?? true);
     setModel(settingsData.model ?? 'gpt-4o-mini');
-    setMaxTokens([settingsData.maxTokens ?? 300]);
-    setTemperature([settingsData.temperature ?? 0.7]);
+    setMaxTokens([settingsData.maxTokens ?? 220]);
+    setTemperature([settingsData.temperature ?? 0.4]);
     setTtl(String(settingsData.ttl ?? 23));
-    setMaxHistory(String(settingsData.maxHistory ?? 20));
+    setMaxHistory(String(settingsData.maxHistory ?? 40));
     setBookingLink(settingsData.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30');
   }, [settingsData]);
 
@@ -77,6 +77,8 @@ export function BotSettingsView() {
       toast.error('Failed to save');
     }
   };
+
+  const isLoaded = !settingsLoading && botActive !== undefined;
 
   const toggleBot = (val: boolean) => {
     setBotActive(val);
@@ -95,33 +97,39 @@ export function BotSettingsView() {
         </CardHeader>
         <CardContent>
           <div className='flex items-center justify-between rounded-xl border p-4 bg-muted/30'>
-            <div className='space-y-1'>
-              <div className='flex items-center gap-2'>
-                <span className={`relative flex h-2.5 w-2.5`}>
-                  {botActive && (
-                    <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75' />
-                  )}
-                  <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${botActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                </span>
-                <span className='text-base font-bold'>Bot Active</span>
-                <Badge
-                  variant='outline'
-                  className={botActive
-                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                    : 'bg-muted text-muted-foreground'
-                  }
-                >
-                  {botActive ? 'LIVE' : 'PAUSED'}
-                </Badge>
-              </div>
-              <p className='text-sm text-muted-foreground'>
-                {botActive
-                  ? 'AI is currently responding to DMs automatically'
-                  : 'Bot is paused — no new responses will be sent'
-                }
-              </p>
-            </div>
-            <Switch checked={botActive} onCheckedChange={toggleBot} className='scale-125' />
+            {!isLoaded ? (
+              <div className='h-12 w-full animate-pulse rounded bg-muted' />
+            ) : (
+              <>
+                <div className='space-y-1'>
+                  <div className='flex items-center gap-2'>
+                    <span className={`relative flex h-2.5 w-2.5`}>
+                      {botActive && (
+                        <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75' />
+                      )}
+                      <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${botActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                    </span>
+                    <span className='text-base font-bold'>Bot Active</span>
+                    <Badge
+                      variant='outline'
+                      className={botActive
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-muted text-muted-foreground'
+                      }
+                    >
+                      {botActive ? 'LIVE' : 'PAUSED'}
+                    </Badge>
+                  </div>
+                  <p className='text-sm text-muted-foreground'>
+                    {botActive
+                      ? 'AI is currently responding to DMs automatically'
+                      : 'Bot is paused — no new responses will be sent'
+                    }
+                  </p>
+                </div>
+                <Switch checked={botActive} onCheckedChange={toggleBot} className='scale-125' />
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -135,89 +143,106 @@ export function BotSettingsView() {
           <CardDescription>Control how the AI generates responses</CardDescription>
         </CardHeader>
         <CardContent className='space-y-5'>
-          <div className='grid gap-5 md:grid-cols-2'>
-            <div className='space-y-2'>
-              <Label>AI Model</Label>
-              <Select value={model} onValueChange={setModel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='gpt-4o-mini'>
-                    <div>
-                      <p>GPT-4o Mini</p>
-                      <p className='text-muted-foreground text-xs'>Fast & cost-effective (recommended)</p>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value='gpt-4o'>
-                    <div>
-                      <p>GPT-4o</p>
-                      <p className='text-muted-foreground text-xs'>Most capable, higher cost</p>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='space-y-2'>
-              <Label>Conversation TTL (hours)</Label>
-              <Input
-                type='number'
-                value={ttl}
-                onChange={(e) => setTtl(e.target.value)}
-                min='1'
-                max='168'
-              />
-              <p className='text-muted-foreground text-xs'>How long before inactive conversation expires</p>
-            </div>
-
+          {!isLoaded ? (
             <div className='space-y-3'>
-              <div className='flex items-center justify-between'>
-                <Label>Max Response Tokens</Label>
-                <span className='text-sm tabular-nums font-medium'>{maxTokens[0]}</span>
+              {[...Array(5)].map((_, i) => <div key={i} className='h-10 animate-pulse rounded bg-muted' />)}
+            </div>
+          ) : (
+            <>
+              <div className='grid gap-5 md:grid-cols-2'>
+                <div className='space-y-2'>
+                  <Label>AI Model</Label>
+                  <Select value={model} onValueChange={setModel}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='gpt-4o-mini'>
+                        <div>
+                          <p>GPT-4o Mini</p>
+                          <p className='text-muted-foreground text-xs'>Fast & cost-effective (recommended)</p>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value='gpt-4o'>
+                        <div>
+                          <p>GPT-4o</p>
+                          <p className='text-muted-foreground text-xs'>Most capable, higher cost</p>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label>Conversation TTL (hours)</Label>
+                  <Input
+                    type='number'
+                    value={ttl}
+                    onChange={(e) => setTtl(e.target.value)}
+                    min='1'
+                    max='168'
+                  />
+                  <p className='text-muted-foreground text-xs'>How long before inactive conversation expires</p>
+                </div>
+
+                <div className='space-y-3'>
+                  <div className='flex items-center justify-between'>
+                    <Label>Max Response Tokens</Label>
+                    <span className='text-sm tabular-nums font-medium'>{maxTokens![0]}</span>
+                  </div>
+                  <Slider
+                    value={maxTokens}
+                    onValueChange={setMaxTokens}
+                    min={40}
+                    max={2000}
+                    step={40}
+                  />
+                  <p className='text-muted-foreground text-xs'>Controls response length (40–2000)</p>
+                </div>
+
+                <div className='space-y-3'>
+                  <div className='flex items-center justify-between'>
+                    <Label>Temperature</Label>
+                    <span className='text-sm tabular-nums font-medium'>{temperature![0].toFixed(1)}</span>
+                  </div>
+                  <Slider
+                    value={temperature}
+                    onValueChange={setTemperature}
+                    min={0}
+                    max={2}
+                    step={0.1}
+                  />
+                  <p className='text-muted-foreground text-xs'>Creativity level (0 = strict, 2 = creative)</p>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label>Max History Messages</Label>
+                  <Input
+                    type='number'
+                    value={maxHistory}
+                    onChange={(e) => setMaxHistory(e.target.value)}
+                    min='2'
+                    max='200'
+                  />
+                  <p className='text-muted-foreground text-xs'>Max messages sent to AI as context (2–200)</p>
+                </div>
               </div>
-              <Slider
-                value={maxTokens}
-                onValueChange={setMaxTokens}
-                min={100}
-                max={500}
-                step={25}
-              />
-              <p className='text-muted-foreground text-xs'>Controls response length (100–500)</p>
-            </div>
 
-            <div className='space-y-3'>
-              <div className='flex items-center justify-between'>
-                <Label>Temperature</Label>
-                <span className='text-sm tabular-nums font-medium'>{temperature[0].toFixed(1)}</span>
-              </div>
-              <Slider
-                value={temperature}
-                onValueChange={setTemperature}
-                min={0}
-                max={1}
-                step={0.1}
-              />
-              <p className='text-muted-foreground text-xs'>Creativity level (0 = strict, 1 = creative)</p>
-            </div>
-
-            <div className='space-y-2'>
-              <Label>Max History Messages</Label>
-              <Input
-                type='number'
-                value={maxHistory}
-                onChange={(e) => setMaxHistory(e.target.value)}
-                min='5'
-                max='50'
-              />
-              <p className='text-muted-foreground text-xs'>Max messages sent to AI as context</p>
-            </div>
-          </div>
-
-          <Button onClick={() => save('Response settings', { model, maxTokens: maxTokens[0], temperature: temperature[0], ttl: Number(ttl), maxHistory: Number(maxHistory) })} className='w-full sm:w-auto'>
-            <Icons.check className='mr-2 h-4 w-4' />
-            Save Response Settings
-          </Button>
+              <Button
+                onClick={() => {
+                  const parsedTtl = Number(ttl);
+                  const parsedHistory = Number(maxHistory);
+                  if (!Number.isFinite(parsedTtl) || parsedTtl < 1 || parsedTtl > 168) return;
+                  if (!Number.isFinite(parsedHistory) || parsedHistory < 2 || parsedHistory > 200) return;
+                  save('Response settings', { model, maxTokens: maxTokens![0], temperature: temperature![0], ttl: parsedTtl, maxHistory: parsedHistory });
+                }}
+                className='w-full sm:w-auto'
+              >
+                <Icons.check className='mr-2 h-4 w-4' />
+                Save Response Settings
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -230,23 +255,29 @@ export function BotSettingsView() {
           <CardDescription>The Calendly URL sent to qualified leads</CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
-          <div className='flex gap-2'>
-            <Input
-              value={bookingLink}
-              onChange={(e) => setBookingLink(e.target.value)}
-              className='flex-1'
-            />
-            <Button
-              variant='outline'
-              onClick={() => window.open(bookingLink, '_blank')}
-            >
-              <Icons.externalLink className='h-4 w-4' />
-            </Button>
-          </div>
-          <Button onClick={() => save('Booking link', { bookingLink })}>
-            <Icons.check className='mr-2 h-4 w-4' />
-            Save Booking Link
-          </Button>
+          {!isLoaded ? (
+            <div className='h-10 animate-pulse rounded bg-muted' />
+          ) : (
+            <>
+              <div className='flex gap-2'>
+                <Input
+                  value={bookingLink}
+                  onChange={(e) => setBookingLink(e.target.value)}
+                  className='flex-1'
+                />
+                <Button
+                  variant='outline'
+                  onClick={() => window.open(bookingLink, '_blank')}
+                >
+                  <Icons.externalLink className='h-4 w-4' />
+                </Button>
+              </div>
+              <Button onClick={() => save('Booking link', { bookingLink })}>
+                <Icons.check className='mr-2 h-4 w-4' />
+                Save Booking Link
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -276,7 +307,8 @@ export function BotSettingsView() {
                   size='icon'
                   className='h-7 w-7 flex-shrink-0'
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://kyle-api.onrender.com${ep.path}`);
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? '(not configured)';
+                    navigator.clipboard.writeText(`${apiUrl}${ep.path}`);
                     toast.success('Copied!');
                   }}
                 >
@@ -355,10 +387,9 @@ export function BotSettingsView() {
                   <AlertDialogAction
                     onClick={async () => {
                       try {
-                        await resetAllConversations();
-                        qc.invalidateQueries({ queryKey: ['conversations'] });
+                        await resetAnalytics();
                         qc.invalidateQueries({ queryKey: ['stats'] });
-                        toast.success('Analytics cleared', { description: 'All stats and history reset' });
+                        toast.success('Analytics cleared', { description: 'Cost and token history reset' });
                       } catch {
                         toast.error('Failed to clear analytics');
                       }

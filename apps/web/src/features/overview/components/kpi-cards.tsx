@@ -12,14 +12,16 @@ export function KpiCards() {
   const active = stats?.activeToday ?? 0;
   const booked = stats?.callsBooked ?? 0;
   const rate = stats?.conversionRate ?? '0.0';
+  const cost = stats?.costTodayUsd ?? '0.0000';
+  const tokens = stats?.tokensToday ?? 0;
 
   return (
-    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
-      <Card className='@container/card border-l-2 border-l-orange-500 bg-gradient-to-br from-card to-muted/30'>
+    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5'>
+      <Card className='@container/card border-l-2 border-l-primary bg-gradient-to-br from-card to-muted/30'>
         <CardHeader>
           <div className='flex items-center justify-between'>
-            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/15'>
-              <Icons.users className='h-4 w-4 text-orange-500' />
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15'>
+              <Icons.users className='h-4 w-4 text-primary' />
             </div>
             <Badge variant='outline' className='text-[11px]'>All Time</Badge>
           </div>
@@ -29,11 +31,11 @@ export function KpiCards() {
         <CardFooter className='pt-0 text-xs text-muted-foreground'>Instagram + Facebook DMs</CardFooter>
       </Card>
 
-      <Card className='@container/card border-l-2 border-l-green-500 bg-gradient-to-br from-card to-muted/30'>
+      <Card className='@container/card border-l-2 border-l-primary bg-gradient-to-br from-card to-muted/30'>
         <CardHeader>
           <div className='flex items-center justify-between'>
-            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/15'>
-              <Icons.zap className='h-4 w-4 text-green-500' />
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15'>
+              <Icons.zap className='h-4 w-4 text-primary' />
             </div>
             <Badge variant='outline' className='text-[11px]'>24h</Badge>
           </div>
@@ -43,11 +45,11 @@ export function KpiCards() {
         <CardFooter className='pt-0 text-xs text-muted-foreground'>Messaged in last 24 hours</CardFooter>
       </Card>
 
-      <Card className='@container/card border-l-2 border-l-blue-500 bg-gradient-to-br from-card to-muted/30'>
+      <Card className='@container/card border-l-2 border-l-primary bg-gradient-to-br from-card to-muted/30'>
         <CardHeader>
           <div className='flex items-center justify-between'>
-            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/15'>
-              <Icons.calendar className='h-4 w-4 text-blue-500' />
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15'>
+              <Icons.calendar className='h-4 w-4 text-primary' />
             </div>
             <Badge variant='outline' className='text-[11px]'>Calendly</Badge>
           </div>
@@ -57,11 +59,11 @@ export function KpiCards() {
         <CardFooter className='pt-0 text-xs text-muted-foreground'>Leads who clicked Calendly link</CardFooter>
       </Card>
 
-      <Card className='@container/card border-l-2 border-l-purple-500 bg-gradient-to-br from-card to-muted/30'>
+      <Card className='@container/card border-l-2 border-l-primary bg-gradient-to-br from-card to-muted/30'>
         <CardHeader>
           <div className='flex items-center justify-between'>
-            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/15'>
-              <Icons.target className='h-4 w-4 text-purple-500' />
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15'>
+              <Icons.target className='h-4 w-4 text-primary' />
             </div>
             <Badge variant='outline' className='text-[11px]'>Bookings</Badge>
           </div>
@@ -69,6 +71,20 @@ export function KpiCards() {
           <CardTitle className='text-3xl font-bold tabular-nums'>{rate}%</CardTitle>
         </CardHeader>
         <CardFooter className='pt-0 text-xs text-muted-foreground'>Calls booked / total leads</CardFooter>
+      </Card>
+
+      <Card className='@container/card border-l-2 border-l-primary bg-gradient-to-br from-card to-muted/30'>
+        <CardHeader>
+          <div className='flex items-center justify-between'>
+            <div className='flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15'>
+              <Icons.sparkles className='h-4 w-4 text-primary' />
+            </div>
+            <Badge variant='outline' className='text-[11px]'>24h</Badge>
+          </div>
+          <CardDescription className='mt-3'>Today&apos;s AI Spend</CardDescription>
+          <CardTitle className='text-3xl font-bold tabular-nums'>${cost}</CardTitle>
+        </CardHeader>
+        <CardFooter className='pt-0 text-xs text-muted-foreground'>{tokens.toLocaleString()} tokens used today</CardFooter>
       </Card>
     </div>
   );

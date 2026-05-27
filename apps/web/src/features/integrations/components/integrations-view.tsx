@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { useLeads, useStats } from '@/lib/api-client';
+import { useLeads, useStats, useHealth } from '@/lib/api-client';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Integration {
@@ -46,8 +46,8 @@ function IntegrationCard({ integration }: { integration: Integration }) {
               <Badge
                 variant='outline'
                 className={integration.status === 'connected'
-                  ? 'bg-green-500/10 text-green-400 border-green-500/20 text-[10px] px-1.5 py-0 flex-shrink-0'
-                  : 'bg-red-500/10 text-red-400 border-red-500/20 text-[10px] px-1.5 py-0 flex-shrink-0'
+                  ? 'bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0 flex-shrink-0'
+                  : 'bg-muted text-muted-foreground border-border text-[10px] px-1.5 py-0 flex-shrink-0'
                 }
               >
                 {integration.status === 'connected' ? (
@@ -95,6 +95,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
 export function IntegrationsView() {
   const { leads } = useLeads();
   const { data: stats } = useStats();
+  const { data: health } = useHealth();
 
   const latestActivity = leads.length > 0
     ? formatDistanceToNow(new Date(Math.max(...leads.map((l) => l.lastActivity))), { addSuffix: true })
@@ -103,7 +104,22 @@ export function IntegrationsView() {
   const totalLeads = stats?.totalLeads ?? 0;
   const callsBooked = stats?.callsBooked ?? 0;
 
+  const apiUp = health ? health.status === 'ok' : undefined;
+  const dbUp = health ? health.db === 'ok' : undefined;
+
   const integrations: Integration[] = [
+    {
+      id: 'api',
+      name: 'Bot API',
+      description: 'Express backend — webhook processing and AI orchestration',
+      status: apiUp === false ? 'disconnected' : 'connected',
+      statusLabel: apiUp === false ? 'Unreachable' : apiUp ? `Up ${health!.uptime}s` : 'Checking...',
+      detail: dbUp === false ? 'DB unreachable' : dbUp ? 'DB connected' : '',
+      lastSync: latestActivity,
+      iconBg: 'bg-slate-700',
+      iconEl: <Icons.activity className='h-5 w-5 text-white' />,
+      actionLabel: 'View health'
+    },
     {
       id: 'manychat',
       name: 'ManyChat',
@@ -144,8 +160,8 @@ export function IntegrationsView() {
       id: 'openai',
       name: 'OpenAI GPT-4o mini',
       description: 'AI language model for message generation',
-      status: totalLeads > 0 ? 'connected' : 'disconnected',
-      statusLabel: 'API key valid',
+      status: health?.openai_configured ? 'connected' : 'disconnected',
+      statusLabel: health?.openai_configured ? 'API key configured' : 'API key missing',
       detail: totalLeads > 0 ? `${totalLeads} leads processed` : 'No requests yet',
       lastSync: latestActivity,
       iconBg: 'bg-emerald-600',
@@ -175,7 +191,7 @@ export function IntegrationsView() {
       iconBg: 'bg-slate-600',
       iconEl: <Icons.link className='h-5 w-5 text-white' />,
       actionLabel: 'Copy URL',
-      webhookUrl: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/webhook`
+      webhookUrl: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/webhook` : '(not configured — set NEXT_PUBLIC_API_URL)'
     }
   ];
 
@@ -185,8 +201,8 @@ export function IntegrationsView() {
     <div className='space-y-4'>
       <div className='flex items-center justify-between'>
         <p className='text-muted-foreground text-sm'>All integrations connected and active</p>
-        <Badge variant='outline' className='bg-green-500/10 text-green-400 border-green-500/20'>
-          <span className='mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500 inline-block' />
+        <Badge variant='outline' className='bg-primary/10 text-primary border-primary/20'>
+          <span className='mr-1.5 h-1.5 w-1.5 rounded-full bg-primary inline-block' />
           {connectedCount} / {integrations.length} connected
         </Badge>
       </div>

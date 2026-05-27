@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -21,11 +22,13 @@ import {
   SheetDescription
 } from '@/components/ui/sheet';
 import { Icons } from '@/components/icons';
-import { Lead } from '@/lib/mock-data';
-import { useLeads } from '@/lib/api-client';
+import { Lead } from '@/lib/types';
+import { useLeads, updateLeadStatus, togglePause, sendManualMessage } from '@/lib/api-client';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { leadStatusBadgeClass } from '@/lib/status-colors';
 
-type StatusFilter = 'All' | 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Closed' | 'Lost';
+type StatusFilter = 'All' | 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Archived';
 type PlatformFilter = 'All' | 'instagram' | 'facebook';
 
 function formatRelativeTime(timestamp: number): string {
@@ -38,22 +41,44 @@ function formatRelativeTime(timestamp: number): string {
   return `${days}d ago`;
 }
 
-const statusBadgeClass: Record<string, string> = {
-  New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Engaged: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  Qualified: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  Booked: 'bg-green-500/10 text-green-400 border-green-500/20',
-  Closed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Lost: 'bg-muted text-muted-foreground border-border'
-};
-
 function LeadDetailSheet({ lead, onClose }: { lead: Lead | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [draft, setDraft] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const [pausing, setPausing] = React.useState(false);
+
+  React.useEffect(() => { setDraft(''); }, [lead?.user_id]);
+
   if (!lead) return null;
   const lastMsg = lead.messages[lead.messages.length - 1];
 
+  const handlePauseToggle = async () => {
+    setPausing(true);
+    try {
+      await togglePause(lead.user_id, !lead.paused);
+      await qc.invalidateQueries({ queryKey: ['conversations'] });
+      toast.success(lead.paused ? 'Bot resumed' : 'Bot paused');
+    } catch { toast.error('Failed to update pause state'); }
+    finally { setPausing(false); }
+  };
+
+  const handleSend = async () => {
+    if (!draft.trim()) return;
+    setSending(true);
+    try {
+      const result = await sendManualMessage(lead.user_id, draft.trim());
+      await qc.invalidateQueries({ queryKey: ['conversations'] });
+      setDraft('');
+      if (result.delivered) toast.success('Message sent via ManyChat');
+      else if (result.manychatConfigured) toast.warning('Recorded — ManyChat delivery failed');
+      else toast.info('Recorded (MANYCHAT_API_KEY not set — not delivered)');
+    } catch { toast.error('Failed to send message'); }
+    finally { setSending(false); }
+  };
+
   return (
     <Sheet open={!!lead} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent className='w-[400px] sm:w-[480px]'>
+      <SheetContent className='w-[400px] sm:w-[480px] flex flex-col'>
         <SheetHeader className='pb-4'>
           <div className='flex items-center gap-3'>
             <div className='flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary text-lg font-bold'>
@@ -64,18 +89,28 @@ function LeadDetailSheet({ lead, onClose }: { lead: Lead | null; onClose: () => 
               <SheetDescription className='font-mono text-xs'>{lead.user_id}</SheetDescription>
             </div>
           </div>
-          <div className='flex gap-2 mt-2'>
-            <Badge variant='outline' className={statusBadgeClass[lead.status]}>
+          <div className='flex items-center gap-2 mt-2 flex-wrap'>
+            <Badge variant='outline' className={leadStatusBadgeClass(lead.status)}>
               {lead.status}
             </Badge>
             <Badge variant='outline' className={lead.platform === 'instagram' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}>
               {lead.platform === 'instagram' ? 'Instagram' : 'Facebook'}
             </Badge>
+            <Button
+              variant={lead.paused ? 'default' : 'outline'}
+              size='sm'
+              className='h-6 text-xs gap-1 ml-auto'
+              onClick={handlePauseToggle}
+              disabled={pausing}
+            >
+              {lead.paused
+                ? <><Icons.play className='h-3 w-3' /> Resume</>
+                : <><Icons.pause className='h-3 w-3' /> Pause</>}
+            </Button>
           </div>
         </SheetHeader>
 
-        <div className='space-y-4'>
-          {/* Stats */}
+        <div className='space-y-4 flex-1 overflow-y-auto'>
           <div className='grid grid-cols-3 gap-3'>
             <div className='rounded-lg bg-muted/50 p-3 text-center'>
               <p className='text-2xl font-bold tabular-nums'>{lead.messages.length}</p>
@@ -91,25 +126,19 @@ function LeadDetailSheet({ lead, onClose }: { lead: Lead | null; onClose: () => 
             </div>
           </div>
 
-          {/* Funnel Progress */}
           <div>
             <p className='text-xs font-medium mb-2 text-muted-foreground'>Funnel Progress</p>
             <div className='h-2 w-full rounded-full bg-muted overflow-hidden'>
-              <div
-                className='h-full rounded-full bg-primary transition-all'
-                style={{ width: `${(lead.funnelStep / 6) * 100}%` }}
-              />
+              <div className='h-full rounded-full bg-primary transition-all' style={{ width: `${(lead.funnelStep / 6) * 100}%` }} />
             </div>
             <p className='text-xs text-muted-foreground mt-1'>Step {lead.funnelStep} of 6</p>
           </div>
 
-          {/* Source */}
           <div className='rounded-lg bg-muted/50 p-3'>
             <p className='text-xs font-medium text-muted-foreground mb-1'>Source</p>
             <p className='text-sm font-medium'>{lead.source.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</p>
           </div>
 
-          {/* Last Message */}
           {lastMsg && (
             <div className='rounded-lg bg-muted/50 p-3'>
               <p className='text-xs font-medium text-muted-foreground mb-2'>Last Message</p>
@@ -125,20 +154,43 @@ function LeadDetailSheet({ lead, onClose }: { lead: Lead | null; onClose: () => 
             View Conversation
           </Button>
         </div>
+
+        {/* Manual send */}
+        <div className='border-t pt-3 mt-3'>
+          {lead.paused && (
+            <p className='text-xs text-yellow-500 mb-2 flex items-center gap-1'>
+              <Icons.pause className='h-3 w-3' /> Bot paused — AI won't auto-reply
+            </p>
+          )}
+          <div className='flex gap-2 items-end'>
+            <Textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void handleSend(); } }}
+              placeholder='Send a manual message… (⌘↵)'
+              className='min-h-[56px] max-h-[100px] resize-none text-sm'
+              disabled={sending}
+            />
+            <Button onClick={handleSend} disabled={sending || !draft.trim()} size='sm' className='h-9 px-3 flex-shrink-0'>
+              {sending ? <Icons.spinner className='h-4 w-4 animate-spin' /> : <Icons.send className='h-4 w-4' />}
+            </Button>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
 }
 
 export function LeadsView() {
-  const { leads: allLeads } = useLeads();
+  const qc = useQueryClient();
+  const { leads: allLeads, fetchNextPage, hasNextPage, isFetchingNextPage } = useLeads();
 
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('All');
   const [platformFilter, setPlatformFilter] = React.useState<PlatformFilter>('All');
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
 
-  const statusFilters: StatusFilter[] = ['All', 'New', 'Engaged', 'Qualified', 'Booked', 'Closed', 'Lost'];
+  const statusFilters: StatusFilter[] = ['All', 'New', 'Engaged', 'Qualified', 'Booked', 'Archived'];
   const platformFilters: { label: string; value: PlatformFilter }[] = [
     { label: 'All Platforms', value: 'All' },
     { label: 'Instagram', value: 'instagram' },
@@ -233,7 +285,10 @@ export function LeadsView() {
                   <TableCell className='text-muted-foreground text-xs'>{idx + 1}</TableCell>
                   <TableCell>
                     <div>
-                      <p className='font-medium text-sm'>{lead.first_name}</p>
+                      <div className='flex items-center gap-1.5'>
+                        <p className='font-medium text-sm'>{lead.first_name}</p>
+                        {lead.paused && <Icons.pause className='h-3 w-3 text-yellow-500 flex-shrink-0' />}
+                      </div>
                       <p className='text-muted-foreground text-[10px] font-mono'>{lead.user_id}</p>
                     </div>
                   </TableCell>
@@ -243,7 +298,7 @@ export function LeadsView() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant='outline' className={`text-xs ${statusBadgeClass[lead.status]}`}>
+                    <Badge variant='outline' className={`text-xs ${leadStatusBadgeClass(lead.status)}`}>
                       {lead.status}
                     </Badge>
                   </TableCell>
@@ -269,7 +324,20 @@ export function LeadsView() {
                       <Button variant='ghost' size='icon' className='h-7 w-7' onClick={() => toast.info('Opening conversation...')}>
                         <Icons.messageCircle className='h-3.5 w-3.5' />
                       </Button>
-                      <Button variant='ghost' size='icon' className='h-7 w-7 text-destructive hover:text-destructive' onClick={() => toast.error(`Marked ${lead.first_name} as stalled`)}>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-7 w-7 text-destructive hover:text-destructive'
+                        onClick={async () => {
+                          try {
+                            await updateLeadStatus(lead.user_id, 'Archived');
+                            await qc.invalidateQueries({ queryKey: ['conversations'] });
+                            toast.success(`${lead.first_name} archived`);
+                          } catch {
+                            toast.error('Failed to archive lead');
+                          }
+                        }}
+                      >
                         <Icons.x className='h-3.5 w-3.5' />
                       </Button>
                     </div>
@@ -280,6 +348,19 @@ export function LeadsView() {
           </Table>
         </CardContent>
       </Card>
+
+      {hasNextPage && (
+        <div className='flex justify-center pt-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? 'Loading...' : `Load more (${allLeads.length} loaded)`}
+          </Button>
+        </div>
+      )}
 
       <LeadDetailSheet lead={selectedLead} onClose={() => setSelectedLead(null)} />
     </div>

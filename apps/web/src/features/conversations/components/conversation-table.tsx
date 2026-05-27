@@ -21,18 +21,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { formatDistanceToNow } from 'date-fns';
-import { Lead } from '@/lib/mock-data';
+import { Lead } from '@/lib/types';
 import { useLeads } from '@/lib/api-client';
+import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
-
-const statusColors: Record<string, string> = {
-  New: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  Engaged: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  Qualified: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  Booked: 'bg-green-500/10 text-green-500 border-green-500/20',
-  Closed: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  Lost: 'bg-muted text-muted-foreground border-border',
-};
+import { leadStatusBadgeClass } from '@/lib/status-colors';
 
 const platformColors: Record<string, string> = {
   instagram: 'bg-pink-500/10 text-pink-500 border-pink-500/20',
@@ -45,7 +38,7 @@ interface ConversationTableProps {
 }
 
 export function ConversationTable({ onSelectLead, selectedLeadId }: ConversationTableProps) {
-  const { leads } = useLeads();
+  const { leads, fetchNextPage, hasNextPage, isFetchingNextPage } = useLeads();
 
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'lastActivity', desc: true }
@@ -58,7 +51,12 @@ export function ConversationTable({ onSelectLead, selectedLeadId }: Conversation
       header: 'Contact',
       cell: ({ row }) => (
         <div>
-          <p className='font-medium'>{row.original.first_name}</p>
+          <div className='flex items-center gap-1.5'>
+            <p className='font-medium'>{row.original.first_name}</p>
+            {row.original.paused && (
+              <Icons.pause className='h-3 w-3 text-yellow-500 flex-shrink-0' />
+            )}
+          </div>
           <p className='text-muted-foreground font-mono text-xs'>{row.original.user_id.slice(0, 16)}…</p>
         </div>
       )
@@ -76,7 +74,7 @@ export function ConversationTable({ onSelectLead, selectedLeadId }: Conversation
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => (
-        <Badge variant='outline' className={`text-xs ${statusColors[row.original.status]}`}>
+        <Badge variant='outline' className={`text-xs ${leadStatusBadgeClass(row.original.status)}`}>
           {row.original.status}
         </Badge>
       )
@@ -169,7 +167,14 @@ export function ConversationTable({ onSelectLead, selectedLeadId }: Conversation
           </TableBody>
         </Table>
       </div>
-      <p className='text-muted-foreground text-xs'>{table.getFilteredRowModel().rows.length} leads</p>
+      <div className='flex items-center justify-between'>
+        <p className='text-muted-foreground text-xs'>{table.getFilteredRowModel().rows.length} of {leads.length} leads</p>
+        {hasNextPage && (
+          <Button variant='outline' size='sm' className='text-xs h-7' onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            {isFetchingNextPage ? 'Loading...' : 'Load more'}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

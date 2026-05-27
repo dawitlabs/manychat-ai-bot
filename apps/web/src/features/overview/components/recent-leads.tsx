@@ -6,13 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLeads } from '@/lib/api-client';
 import { formatDistanceToNow } from 'date-fns';
 import { Icons } from '@/components/icons';
-
-const statusColors: Record<string, string> = {
-  New: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  Qualifying: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  Booked: 'bg-green-500/10 text-green-500 border-green-500/20',
-  Stalled: 'bg-muted text-muted-foreground border-border',
-};
+import { leadStatusBadgeClass } from '@/lib/status-colors';
 
 export function RecentLeads() {
   const { leads, isLoading } = useLeads();
@@ -59,7 +53,7 @@ export function RecentLeads() {
                   </p>
                 </div>
                 <div className='flex flex-col items-end gap-1'>
-                  <Badge variant='outline' className={`text-xs ${statusColors[lead.status]}`}>
+                  <Badge variant='outline' className={`text-xs ${leadStatusBadgeClass(lead.status)}`}>
                     {lead.status}
                   </Badge>
                   <span className='text-muted-foreground text-xs'>

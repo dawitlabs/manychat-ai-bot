@@ -1,68 +1,32 @@
 'use client';
 
-import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Icons } from '@/components/icons';
-import { Lead } from '@/lib/mock-data';
+import { Lead } from '@/lib/types';
 import { useLeads } from '@/lib/api-client';
+import { leadStatusBadgeClass } from '@/lib/status-colors';
 
-type PipelineStatus = 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Closed';
+type PipelineStatus = 'New' | 'Engaged' | 'Qualified' | 'Booked' | 'Archived';
 
 interface Column {
   id: PipelineStatus;
   label: string;
   colorClass: string;
   borderClass: string;
-  badgeClass: string;
   topBorderClass: string;
 }
 
 const columns: Column[] = [
-  {
-    id: 'New',
-    label: 'New',
-    colorClass: 'bg-blue-500/10',
-    borderClass: 'border-blue-500/30',
-    badgeClass: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    topBorderClass: 'bg-blue-500'
-  },
-  {
-    id: 'Engaged',
-    label: 'Engaged',
-    colorClass: 'bg-yellow-500/10',
-    borderClass: 'border-yellow-500/30',
-    badgeClass: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-    topBorderClass: 'bg-yellow-500'
-  },
-  {
-    id: 'Qualified',
-    label: 'Qualified',
-    colorClass: 'bg-orange-500/10',
-    borderClass: 'border-orange-500/30',
-    badgeClass: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    topBorderClass: 'bg-orange-500'
-  },
-  {
-    id: 'Booked',
-    label: 'Booked',
-    colorClass: 'bg-green-500/10',
-    borderClass: 'border-green-500/30',
-    badgeClass: 'bg-green-500/10 text-green-400 border-green-500/20',
-    topBorderClass: 'bg-green-500'
-  },
-  {
-    id: 'Closed',
-    label: 'Closed ✓',
-    colorClass: 'bg-emerald-500/10',
-    borderClass: 'border-emerald-500/30',
-    badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    topBorderClass: 'bg-emerald-500'
-  }
+  { id: 'New',      label: 'New',      colorClass: 'bg-muted/40',    borderClass: 'border-border',         topBorderClass: 'bg-muted-foreground/40' },
+  { id: 'Engaged',  label: 'Engaged',  colorClass: 'bg-muted/30',    borderClass: 'border-border',         topBorderClass: 'bg-muted-foreground/60' },
+  { id: 'Qualified',label: 'Qualified',colorClass: 'bg-primary/5',   borderClass: 'border-primary/20',     topBorderClass: 'bg-primary/50' },
+  { id: 'Booked',   label: 'Booked',   colorClass: 'bg-primary/10',  borderClass: 'border-primary/30',     topBorderClass: 'bg-primary' },
+  { id: 'Archived', label: 'Archived',  colorClass: 'bg-muted/20',    borderClass: 'border-border',         topBorderClass: 'bg-muted-foreground/30' },
 ];
 
 function mapLeadStatus(lead: Lead): PipelineStatus {
-  if (lead.status === 'Closed') return 'Closed';
+  if (lead.status === 'Archived') return 'Archived';
   if (lead.status === 'Booked') return 'Booked';
   if (lead.status === 'Qualified') return 'Qualified';
   if (lead.status === 'Engaged') return 'Engaged';
@@ -85,7 +49,10 @@ function LeadCard({ lead, col }: { lead: Lead; col: Column }) {
       <div className={`absolute top-0 left-0 right-0 h-0.5 ${col.topBorderClass}`} />
       <div className='flex items-start justify-between gap-2'>
         <div>
-          <p className='text-sm font-semibold leading-tight'>{lead.first_name}</p>
+          <div className='flex items-center gap-1'>
+            <p className='text-sm font-semibold leading-tight'>{lead.first_name}</p>
+            {lead.paused && <Icons.pause className='h-3 w-3 text-yellow-500 flex-shrink-0' />}
+          </div>
           <p className='text-muted-foreground text-[10px] font-mono truncate max-w-[130px]'>{lead.user_id}</p>
         </div>
         <Badge variant='outline' className={`text-[10px] px-1.5 py-0 flex-shrink-0 ${lead.platform === 'instagram' ? 'bg-pink-500/10 text-pink-400 border-pink-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
@@ -135,7 +102,7 @@ export function PipelineView() {
             <div className={`rounded-lg border ${col.borderClass} ${col.colorClass} p-3`}>
               <div className='flex items-center justify-between mb-2'>
                 <span className='text-sm font-semibold'>{col.label}</span>
-                <Badge variant='outline' className={`text-xs ${col.badgeClass}`}>
+                <Badge variant='outline' className={`text-xs ${leadStatusBadgeClass(col.id)}`}>
                   {leads.length}
                 </Badge>
               </div>

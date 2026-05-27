@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { format, subDays, startOfDay, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import type { Lead, LeadStatus, Platform } from './mock-data';
+import type { Lead, LeadStatus, Platform } from './types';
 
 const PROXY = '/api/proxy';
 
@@ -10,12 +10,14 @@ const PROXY = '/api/proxy';
 export interface ApiConversation {
   user_id: string;
   first_name: string | null;
+  platform: string;
   messages: Array<{ role: 'assistant' | 'user'; content: string; timestamp?: number }>;
   lastActivity: number;
   source: string;
   startedFromComment: string | null;
   status?: string;
   funnelStep?: number;
+  paused?: boolean;
 }
 
 export interface ApiPrompts {
@@ -38,71 +40,133 @@ export interface ApiStats {
   activeToday: number;
   callsBooked: number;
   conversionRate: string;
+  tokensToday: number;
+  costTodayUsd: string;
+}
+
+export interface ApiTemplate {
+  id: string;
+  title: string;
+  body: string;
+  tags: string[];
+}
+
+export interface ApiTemplates {
+  openers: ApiTemplate[];
+  qualifiers: ApiTemplate[];
+  objections: ApiTemplate[];
+  closers: ApiTemplate[];
+}
+
+export interface ApiHealth {
+  status: string;
+  uptime: number;
+  db: 'ok' | 'down';
+  sentry: boolean;
+  openai_configured: boolean;
+  timestamp: string;
 }
 
 // ── Fetch functions ───────────────────────────────────────────────────────────
 
-async function fetchConversations(): Promise<ApiConversation[]> {
-  const res = await fetch(`${PROXY}/conversations`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch conversations');
-  return res.json();
+async function get<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') window.location.href = '/auth/sign-in';
+    throw new Error('Session expired');
+  }
+  if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+async function fetchConversationsPage(cursor?: number): Promise<ApiConversation[]> {
+  const params = new URLSearchParams({ limit: '50' });
+  if (cursor !== undefined) params.set('cursor', String(cursor));
+  return get<ApiConversation[]>(`${PROXY}/conversations?${params}`);
 }
 
 async function fetchStats(): Promise<ApiStats> {
-  const res = await fetch(`${PROXY}/stats`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch stats');
-  return res.json();
+  return get<ApiStats>(`${PROXY}/stats`);
 }
 
 async function fetchPrompts(): Promise<ApiPrompts> {
-  const res = await fetch(`${PROXY}/prompts`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch prompts');
-  return res.json();
+  return get<ApiPrompts>(`${PROXY}/prompts`);
 }
 
 async function fetchBotSettings(): Promise<ApiBotSettings> {
-  const res = await fetch(`${PROXY}/bot-settings`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch bot settings');
-  return res.json();
+  return get<ApiBotSettings>(`${PROXY}/bot-settings`);
+}
+
+async function fetchTemplates(): Promise<ApiTemplates> {
+  return get<ApiTemplates>(`${PROXY}/templates`);
+}
+
+async function fetchHealth(): Promise<ApiHealth> {
+  return get<ApiHealth>(`${PROXY}/health`);
+}
+
+function getCsrfToken(): string {
+  if (typeof document === 'undefined') return '';
+  return document.cookie.split('; ').find((c) => c.startsWith('__Host-csrf='))?.split('=')[1] ?? '';
+}
+
+async function mutate(url: string, method: string, body?: unknown): Promise<Response> {
+  return fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-csrf-token': getCsrfToken(),
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+}
+
+async function assertOk(res: Response): Promise<void> {
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') window.location.href = '/auth/sign-in';
+    throw new Error('Session expired');
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || res.statusText || `HTTP ${res.status}`);
+  }
 }
 
 export async function savePrompts(data: Partial<ApiPrompts>): Promise<void> {
-  await fetch(`${PROXY}/prompts`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
+  await assertOk(await mutate(`${PROXY}/prompts`, 'PUT', data));
 }
 
 export async function saveBotSettings(data: Partial<ApiBotSettings>): Promise<void> {
-  await fetch(`${PROXY}/bot-settings`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
+  await assertOk(await mutate(`${PROXY}/bot-settings`, 'PUT', data));
+}
+
+export async function saveTemplates(data: Partial<ApiTemplates>): Promise<void> {
+  await assertOk(await mutate(`${PROXY}/templates`, 'PUT', data));
 }
 
 export async function resetAllConversations(): Promise<void> {
-  const res = await fetch(`${PROXY}/reset-all`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to reset conversations');
+  await assertOk(await mutate(`${PROXY}/reset-all`, 'POST'));
+}
+
+export async function resetAnalytics(): Promise<void> {
+  await assertOk(await mutate(`${PROXY}/reset-analytics`, 'POST'));
+}
+
+export async function togglePause(user_id: string, paused: boolean): Promise<void> {
+  await assertOk(await mutate(`${PROXY}/conversations/${encodeURIComponent(user_id)}/pause`, 'PATCH', { paused }));
+}
+
+export async function sendManualMessage(user_id: string, text: string): Promise<{ delivered: boolean; manychatConfigured: boolean }> {
+  const res = await mutate(`${PROXY}/conversations/${encodeURIComponent(user_id)}/send`, 'POST', { text });
+  await assertOk(res);
+  return res.json();
 }
 
 export async function updateLeadStatus(user_id: string, status: string, funnelStep?: number): Promise<void> {
-  await fetch(`${PROXY}/leads/${encodeURIComponent(user_id)}/status`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, funnelStep }),
-  });
+  await assertOk(await mutate(`${PROXY}/leads/${encodeURIComponent(user_id)}/status`, 'PUT', { status, funnelStep }));
 }
 
 // ── Query options ─────────────────────────────────────────────────────────────
-
-export const conversationsQueryOptions = queryOptions({
-  queryKey: ['conversations'],
-  queryFn: fetchConversations,
-  refetchInterval: 15_000,
-  retry: 1,
-});
 
 export const statsQueryOptions = queryOptions({
   queryKey: ['stats'],
@@ -123,12 +187,46 @@ export const botSettingsQueryOptions = queryOptions({
   retry: 1,
 });
 
+export const templatesQueryOptions = queryOptions({
+  queryKey: ['templates'],
+  queryFn: fetchTemplates,
+  retry: 1,
+});
+
+export const healthQueryOptions = queryOptions({
+  queryKey: ['health'],
+  queryFn: fetchHealth,
+  refetchInterval: 30_000,
+  retry: 0,
+});
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useLeads() {
-  const { data, isLoading, isError } = useQuery(conversationsQueryOptions);
-  const leads = React.useMemo(() => (data ?? []).map(mapApiConversation), [data]);
-  return { leads, isLoading, isError, count: leads.length };
+  const query = useInfiniteQuery({
+    queryKey: ['conversations'] as const,
+    queryFn: ({ pageParam }) => fetchConversationsPage(pageParam as number | undefined),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage: ApiConversation[]) =>
+      lastPage.length === 50 ? lastPage[lastPage.length - 1].lastActivity : undefined,
+    refetchInterval: 15_000,
+    retry: 1,
+  });
+
+  const leads = React.useMemo(
+    () => (query.data?.pages ?? []).flat().map(mapApiConversation),
+    [query.data],
+  );
+
+  return {
+    leads,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    count: leads.length,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  };
 }
 
 export function useStats() {
@@ -143,47 +241,32 @@ export function useBotSettings() {
   return useQuery(botSettingsQueryOptions);
 }
 
+export function useTemplates() {
+  return useQuery(templatesQueryOptions);
+}
+
+export function useHealth() {
+  return useQuery(healthQueryOptions);
+}
+
 // ── Mapper ────────────────────────────────────────────────────────────────────
 
-function deriveStatus(convo: ApiConversation): LeadStatus {
-  const hasCalendly = convo.messages.some(
-    (m) => m.role === 'assistant' && m.content.includes('calendly.com')
-  );
-  if (hasCalendly) return 'Booked';
-  if (convo.messages.length <= 2) return 'New';
-  const n = convo.messages.length;
-  if (n <= 6) return 'Engaged';
-  return 'Qualified';
-}
-
-function deriveFunnelStep(convo: ApiConversation): 1 | 2 | 3 | 4 | 5 | 6 {
-  const hasCalendly = convo.messages.some(
-    (m) => m.role === 'assistant' && m.content.includes('calendly.com')
-  );
-  if (hasCalendly) return 6;
-  const n = convo.messages.length;
-  if (n <= 2) return 1;
-  if (n <= 4) return 2;
-  if (n <= 6) return 3;
-  if (n <= 8) return 4;
-  if (n <= 10) return 5;
-  return 6;
-}
-
 export function mapApiConversation(convo: ApiConversation): Lead {
-  const platform: Platform = convo.source.includes('facebook') ? 'facebook' : 'instagram';
-  const hour = 3_600_000;
-  const messages = convo.messages.map((m, i) => ({
-    role: m.role,
-    content: m.content,
-    timestamp: m.timestamp ?? convo.lastActivity - (convo.messages.length - i) * hour,
-  }));
+  const platform: Platform = convo.platform === 'facebook' ? 'facebook' : 'instagram';
+  const messages = convo.messages
+    .filter((m) => m.timestamp !== undefined)
+    .map((m) => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp!,
+    }));
   return {
     user_id: convo.user_id,
     first_name: convo.first_name ?? `Lead ${convo.user_id.slice(-4).toUpperCase()}`,
     platform,
-    status: (convo.status as LeadStatus) ?? deriveStatus(convo),
-    funnelStep: (convo.funnelStep as 1 | 2 | 3 | 4 | 5 | 6) ?? deriveFunnelStep(convo),
+    status: (convo.status as LeadStatus) ?? 'New',
+    funnelStep: (convo.funnelStep as 1 | 2 | 3 | 4 | 5 | 6) ?? 1,
+    paused: convo.paused ?? false,
     messages,
     lastActivity: convo.lastActivity,
     source: convo.startedFromComment ? 'comment' : platform === 'facebook' ? 'facebook_dm' : 'instagram_dm',

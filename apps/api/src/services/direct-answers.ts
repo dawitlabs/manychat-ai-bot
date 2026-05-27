@@ -37,6 +37,17 @@ const DIRECT_ANSWER_RULES: Array<{
       "It's just a quick 20 min call to see if it's a fit.",
     ],
   },
+  {
+    // Booking intent — send the link directly instead of letting the AI improvise
+    match: (message) =>
+      /\b(how (can|do|to) (i|we) (book|schedule|sign up|join)|how (can|do) i (get started|start)|send (me )?the link|book (a|the) (call|time|slot)|schedule (a|the) (call|time)|i('m| am) (ready|in)|let('?s| us) (do it|go)|sign me up|let do it)\b/.test(message) ||
+      (/\b(book|schedule)\b/.test(message) && message.split(' ').length <= 6),
+    messages: [
+      'Sounds good. Here\'s the booking link:',
+      'https://calendly.com/kyle-briere-largedumbbells/30',
+      'My calendar has limited space so make sure you book a time now, and let me know once you booked or if none of those times work for you then I can book you in manually.',
+    ],
+  },
 ];
 
 function normalizeForMatching(message: string): string {

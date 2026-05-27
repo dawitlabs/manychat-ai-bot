@@ -8,11 +8,12 @@ import { Icons } from '@/components/icons';
 import { useLeads, useStats } from '@/lib/api-client';
 import { formatDistanceToNow, subDays, startOfDay } from 'date-fns';
 
-type EventType = 'sent' | 'received' | 'booked' | 'stalled';
+type EventType = 'sent' | 'received' | 'paused-received' | 'booked' | 'stalled';
 
 const dotColor: Record<EventType, string> = {
   sent: 'bg-green-500',
   received: 'bg-blue-500',
+  'paused-received': 'bg-yellow-500',
   booked: 'bg-orange-500',
   stalled: 'bg-red-500',
 };
@@ -40,26 +41,35 @@ export function ActivityView() {
 
       lead.messages.forEach((msg, i) => {
         const isBookingMsg = msg.role === 'assistant' && msg.content.includes('calendly.com');
+        const type: EventType = isBookingMsg
+          ? 'booked'
+          : msg.role === 'assistant'
+          ? 'sent'
+          : lead.paused
+          ? 'paused-received'
+          : 'received';
         all.push({
           id: `${lead.user_id}-${i}`,
-          type: isBookingMsg ? 'booked' : msg.role === 'assistant' ? 'sent' : 'received',
+          type,
           initials,
           description: isBookingMsg
             ? `${lead.first_name} received booking link — Step 6`
             : msg.role === 'assistant'
             ? `AI replied to ${lead.first_name} · Step ${lead.funnelStep}`
+            : lead.paused
+            ? `${lead.first_name} replied · bot paused`
             : `${lead.first_name} replied · ${lead.status}`,
           preview: msg.content.slice(0, 90) + (msg.content.length > 90 ? '…' : ''),
           timestamp: msg.timestamp,
         });
       });
 
-      if (lead.status === 'Lost') {
+      if (lead.status === 'Archived') {
         all.push({
           id: `${lead.user_id}-stalled`,
           type: 'stalled',
           initials,
-          description: `${lead.first_name} marked lost`,
+          description: `${lead.first_name} archived`,
           preview: `Last: "${lead.messages.at(-1)?.content.slice(0, 60) ?? ''}…"`,
           timestamp: lead.lastActivity,
         });
