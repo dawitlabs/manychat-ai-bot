@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --color-black: #0a0a0a;
+  --color-gold: #c49a4a;
+  --color-gold-light: #d4af68;
+  --color-gold-dark: #9a7530;
+  --color-white: #ffffff;
+  --color-gray-900: #111111;
+  --color-gray-800: #1a1a1a;
+  --color-gray-700: #252525;
+  --color-gray-600: #3a3a3a;
+  --color-gray-400: #9a9a9a;
+  --color-gray-200: #e5e5e5;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Gold gradient text utility */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #c49a4a 0%, #e8c97a 50%, #c49a4a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Section fade-in animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease forwards;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.7s 0.1s ease both;
+}
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.7s 0.2s ease both;
+}
+.animate-fade-up-delay-3 {
+  animation: fade-up 0.7s 0.3s ease both;
+}
+.animate-fade-up-delay-4 {
+  animation: fade-up 0.7s 0.4s ease both;
+}
+
+/* Gold shimmer on buttons */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.btn-gold {
+  background: linear-gradient(
+    90deg,
+    #c49a4a 0%,
+    #e8c97a 30%,
+    #c49a4a 60%,
+    #9a7530 100%
+  );
+  background-size: 200% auto;
+  transition: background-position 0.6s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-gold:hover {
+  background-position: right center;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(196, 154, 74, 0.35);
+}
+
+.btn-ghost {
+  border: 1px solid rgba(196, 154, 74, 0.4);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.btn-ghost:hover {
+  border-color: #c49a4a;
+  background: rgba(196, 154, 74, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Card hover glow */
+.card-glow {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.card-glow:hover {
+  border-color: rgba(196, 154, 74, 0.3);
+  box-shadow: 0 0 32px rgba(196, 154, 74, 0.08);
+}
+
+/* Horizontal rule with gold */
+.hr-gold {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c49a4a, transparent);
+  opacity: 0.4;
+}
+
+/* Number counter style */
+.stat-number {
+  font-family: var(--font-display);
+  font-feature-settings: "tnum";
+}

@@ -7,7 +7,8 @@
     "dev:api": "pnpm --filter @manychat-bot/api dev",
     "dev:web": "pnpm --filter @manychat-bot/web dev",
     "dev:admin": "pnpm --filter @manychat-bot/admin dev",
-    "build": "pnpm --filter @manychat-bot/web build && pnpm --filter @manychat-bot/admin build"
+    "dev:landing": "pnpm --filter @manychat-bot/landing dev",
+    "build": "pnpm --filter @manychat-bot/web build && pnpm --filter @manychat-bot/admin build && pnpm --filter @manychat-bot/landing build"
   },
   "devDependencies": {
     "turbo": "^2.0.0"
