@@ -67,7 +67,6 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
             version: 'v2',
             content: { messages: [{ type: 'text', text }] },
           },
-          message_tag: 'ACCOUNT_UPDATE',
         }),
       });
       if (mcRes.ok) {
