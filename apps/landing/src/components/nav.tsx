@@ -19,7 +19,7 @@ export default function Nav() {
         </span>
       </Link>
 
-      <nav className='hidden md:flex items-center gap-8 text-sm font-medium text-gray-400'>
+      <nav className='hidden lg:flex items-center gap-6 text-sm font-medium text-gray-400'>
         <Link href='#blueprint' className='hover:text-gold transition-colors duration-200'>Free Blueprint</Link>
         <Link href='#how-it-works' className='hover:text-gold transition-colors duration-200'>How It Works</Link>
         <Link href='#what-you-get' className='hover:text-gold transition-colors duration-200'>The Program</Link>

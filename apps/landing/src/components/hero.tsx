@@ -1,6 +1,6 @@
 export default function Hero() {
   return (
-    <section className='relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-16 overflow-hidden'>
+    <section className='relative min-h-screen flex flex-col items-center justify-center text-center px-5 sm:px-6 pt-24 pb-14 overflow-hidden'>
       {/* Background radial glow */}
       <div
         aria-hidden
@@ -67,18 +67,19 @@ export default function Hero() {
         </div>
 
         {/* Stats row */}
-        <div className='grid grid-cols-3 gap-6 max-w-2xl mx-auto animate-fade-up-delay-4'>
+        <div className='grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto animate-fade-up-delay-4'
+          style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '1.5rem' }}>
           {[
             { num: '12', unit: 'Weeks', label: 'to your dream body' },
-            { num: '100%', unit: 'Custom', label: 'plan — no templates' },
-            { num: '✓', unit: 'Guaranteed', label: 'results or money back' },
+            { num: '100%', unit: 'Custom', label: 'no templates' },
+            { num: '✓', unit: 'Guaranteed', label: 'money back' },
           ].map((stat) => (
             <div key={stat.unit} className='text-center'>
-              <div className='font-display font-black text-3xl sm:text-4xl' style={{ color: '#c49a4a' }}>
+              <div className='font-display font-black text-2xl sm:text-4xl' style={{ color: '#c49a4a' }}>
                 {stat.num}
               </div>
-              <div className='font-display font-bold text-white text-sm sm:text-base mt-0.5'>{stat.unit}</div>
-              <div className='text-gray-500 text-xs mt-0.5 hidden sm:block'>{stat.label}</div>
+              <div className='font-display font-bold text-white text-xs sm:text-base mt-0.5'>{stat.unit}</div>
+              <div className='text-gray-500 text-[10px] sm:text-xs mt-0.5 hidden xs:block sm:block'>{stat.label}</div>
             </div>
           ))}
         </div>

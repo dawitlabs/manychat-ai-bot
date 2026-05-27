@@ -26,7 +26,7 @@ export default function AboutKyle() {
               />
             </div>
             {/* Floating credential card */}
-            <div className='absolute -bottom-5 -right-4 md:-right-8 rounded-xl px-5 py-4 shadow-xl'
+            <div className='absolute -bottom-5 right-0 md:-right-6 rounded-xl px-4 py-3 shadow-xl max-w-[200px]'
               style={{ background: '#1a1a1a', border: '1px solid rgba(196,154,74,0.25)' }}>
               <p className='font-display font-bold text-white text-sm'>Kyle Briere</p>
               <p className='text-gray-400 text-xs mt-0.5'>Certified Strength & Nutrition Coach</p>
