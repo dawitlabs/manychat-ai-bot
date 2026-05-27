@@ -72,7 +72,8 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
       if (mcRes.ok) {
         delivered = true;
       } else {
-        rlog.warn('ManyChat send failed', { user_id, status: mcRes.status });
+        const body = await mcRes.text().catch(() => '');
+        rlog.warn('ManyChat send failed', { user_id, status: mcRes.status, body });
       }
     } catch (err) {
       rlog.warn('ManyChat send error', { user_id, msg: (err as Error).message });
