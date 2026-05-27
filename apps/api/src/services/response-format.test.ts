@@ -40,10 +40,9 @@ Let me know once you booked.`, { maxMessages: 3 });
     assert.deepEqual(messages, ['Got it']);
   });
 
-  it('converts bubbles to ManyChat text messages', () => {
+  it('combines bubbles into one ManyChat message for Instagram delivery', () => {
     assert.deepEqual(toManyChatTextMessages(['Understood', "How's the nutrition piece?"]), [
-      { type: 'text', text: 'Understood' },
-      { type: 'text', text: "How's the nutrition piece?" },
+      { type: 'text', text: "Understood\n\nHow's the nutrition piece?" },
     ]);
   });
 });

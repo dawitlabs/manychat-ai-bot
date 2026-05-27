@@ -92,5 +92,7 @@ export function formatKyleReply(
 }
 
 export function toManyChatTextMessages(messages: string[]): ManyChatTextMessage[] {
-  return messages.map((text) => ({ type: 'text' as const, text }));
+  // Instagram silently drops all bubbles after the first, so combine into one message.
+  const combined = messages.join('\n\n');
+  return [{ type: 'text' as const, text: combined }];
 }
