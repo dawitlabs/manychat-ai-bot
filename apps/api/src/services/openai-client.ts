@@ -99,13 +99,15 @@ export async function classifyConversation(
       }),
     );
     void logUsage(model, completion.usage ?? undefined);
-    const raw = completion.choices[0].message.content?.trim() ?? '{}';
+    const raw = (completion.choices[0].message.content?.trim() ?? '{}')
+      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
     const parsed = JSON.parse(raw) as { funnelStep?: number; status?: string };
     const funnelStep = (Math.min(6, Math.max(1, parsed.funnelStep ?? 1))) as Classification['funnelStep'];
     const validStatuses = new Set(['New', 'Engaged', 'Qualified', 'Booked']);
     const status = validStatuses.has(parsed.status ?? '') ? (parsed.status as Classification['status']) : 'New';
     return { funnelStep, status };
   } catch (err) {
+    log.warn('[classify] parse error', { message: (err as Error).message });
     Sentry.captureException(err);
     return null;
   }
