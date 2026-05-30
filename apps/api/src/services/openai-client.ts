@@ -6,6 +6,7 @@ import { openaiUsage } from '../db/schema';
 import { computeCostUsd } from './openai-pricing';
 import { Sentry } from '../config/sentry';
 import { log } from '../lib/logger';
+import { openaiCalls, openaiErrors, openaiDuration } from '../lib/metrics';
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: 30_000 });
 
@@ -89,6 +90,7 @@ export async function classifyConversation(
   completions: Completions = openai.chat.completions,
 ): Promise<Classification | null> {
   const model = 'gpt-4o-mini';
+  const stopTimer = openaiDuration.startTimer({ type: 'classify', model });
   try {
     const completion = await withRetry(() =>
       completions.create({
@@ -98,6 +100,8 @@ export async function classifyConversation(
         temperature: 0,
       }),
     );
+    stopTimer({ type: 'classify', model });
+    openaiCalls.inc({ type: 'classify', model });
     void logUsage(model, completion.usage ?? undefined);
     const raw = (completion.choices[0].message.content?.trim() ?? '{}')
       .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
@@ -107,6 +111,8 @@ export async function classifyConversation(
     const status = validStatuses.has(parsed.status ?? '') ? (parsed.status as Classification['status']) : 'New';
     return { funnelStep, status };
   } catch (err) {
+    stopTimer({ type: 'classify', model });
+    openaiErrors.inc({ type: 'classify' });
     log.warn('[classify] parse error', { message: (err as Error).message });
     Sentry.captureException(err);
     return null;
@@ -168,15 +174,24 @@ export async function generateReply(
 ): Promise<string> {
   const botSettings = await getSettingJson<BotSettings>('bot_settings', SETTING_DEFAULTS);
   const model = botSettings.model ?? 'gpt-4o-mini';
+  const stopTimer = openaiDuration.startTimer({ type: 'generate', model });
 
-  const completion = await withRetry(() =>
-    openai.chat.completions.create({
-      model,
-      messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
-      max_tokens: options.maxTokens ?? botSettings.maxTokens ?? 300,
-      temperature: options.temperature ?? botSettings.temperature ?? 0.7,
-    }),
-  );
-  void logUsage(model, completion.usage ?? undefined, options.userId);
-  return completion.choices[0].message.content?.trim() ?? '';
+  try {
+    const completion = await withRetry(() =>
+      openai.chat.completions.create({
+        model,
+        messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
+        max_tokens: options.maxTokens ?? botSettings.maxTokens ?? 300,
+        temperature: options.temperature ?? botSettings.temperature ?? 0.7,
+      }),
+    );
+    stopTimer({ type: 'generate', model });
+    openaiCalls.inc({ type: 'generate', model });
+    void logUsage(model, completion.usage ?? undefined, options.userId);
+    return completion.choices[0].message.content?.trim() ?? '';
+  } catch (err) {
+    stopTimer({ type: 'generate', model });
+    openaiErrors.inc({ type: 'generate' });
+    throw err;
+  }
 }

@@ -102,9 +102,19 @@ function normalizeForMatching(message: string): string {
     .trim();
 }
 
-export function getDirectAnswer(message: string, options: { repeated?: boolean } = {}): string[] | null {
+export function getDirectAnswer(
+  message: string,
+  options: { repeated?: boolean; bookingLink?: string } = {},
+): string[] | null {
   const normalized = normalizeForMatching(message);
   const rule = DIRECT_ANSWER_RULES.find((candidate) => candidate.match(normalized));
-  if (rule) return rule.messages;
-  return options.repeated ? REPEAT_FALLBACK : null;
+  if (!rule) return options.repeated ? REPEAT_FALLBACK : null;
+
+  // Substitute the runtime booking link into any message that contains the hardcoded URL
+  if (options.bookingLink) {
+    return rule.messages.map((m) =>
+      m.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, options.bookingLink!),
+    );
+  }
+  return rule.messages;
 }

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  api:
+    name: API — Typecheck, Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --filter @manychat-bot/api typecheck
+
+      - name: Lint
+        run: pnpm --filter @manychat-bot/api lint
+
+      - name: Test
+        run: pnpm --filter @manychat-bot/api test
+        env:
+          # Tests use injectable mocks — no real DB/API needed
+          OPENAI_API_KEY: sk-test
+          DATABASE_URL: postgresql://test:test@localhost/test
+          WEB_ORIGIN: http://localhost:3001
+          MANYCHAT_WEBHOOK_SECRET: test-secret-32-chars-minimum-here
+          ADMIN_API_KEY: test-admin-key
+          JWT_SECRET: test-jwt-secret-at-least-32-chars-long
+          NODE_ENV: test

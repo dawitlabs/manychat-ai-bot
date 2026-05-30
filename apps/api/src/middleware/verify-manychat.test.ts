@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response } from 'express';
 
 const SECRET = 'test-secret-vm';
 
@@ -11,7 +11,7 @@ process.env.WEB_ORIGIN = 'http://localhost:3001';
 process.env.ADMIN_API_KEY = 'admin-test';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const { verifyManychat } = require('./verify-manychat') as typeof import('./verify-manychat');
 
 function makeReq(secret?: string): Request {

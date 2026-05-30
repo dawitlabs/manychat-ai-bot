@@ -3,6 +3,7 @@ import { db } from '../db/client';
 import { conversations, messages } from '../db/schema';
 import type { Conversation, Platform, Source } from '../domain/conversation';
 import { getSettingJson } from './settings-store';
+import { appendConversationEvent } from './event-log';
 
 const DEFAULT_MAX_HISTORY = 40;
 
@@ -76,6 +77,8 @@ export async function appendMessage(user_id: string, role: 'user' | 'assistant',
   });
 }
 
+const MAX_LOCK_RETRIES = 3;
+
 export async function updateConversationStatus(
   user_id: string,
   status: string,
@@ -83,19 +86,47 @@ export async function updateConversationStatus(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dbClient: any = db,
 ): Promise<{ previousStatus: string; currentStatus: string }> {
-  const [row] = await dbClient
-    .select({ status: conversations.status })
-    .from(conversations)
-    .where(eq(conversations.user_id, user_id))
-    .limit(1);
+  let previousStatus = status;
 
-  const previousStatus = row?.status ?? status;
+  for (let attempt = 0; attempt <= MAX_LOCK_RETRIES; attempt++) {
+    const [row] = await dbClient
+      .select({ status: conversations.status, version: conversations.version })
+      .from(conversations)
+      .where(eq(conversations.user_id, user_id))
+      .limit(1);
 
-  await dbClient
-    .update(conversations)
-    .set({ status, ...(funnel_step !== undefined ? { funnel_step } : {}) })
-    .where(eq(conversations.user_id, user_id));
+    if (!row) break; // conversation was deleted — nothing to update
 
+    previousStatus = row.status;
+    if (previousStatus === status && row.version > 0) {
+      // Already at the target status — nothing to do
+      return { previousStatus, currentStatus: status };
+    }
+
+    const updated = await dbClient
+      .update(conversations)
+      .set({
+        status,
+        version: row.version + 1,
+        ...(funnel_step !== undefined ? { funnel_step } : {}),
+      })
+      .where(and(eq(conversations.user_id, user_id), eq(conversations.version, row.version)))
+      .returning({ updatedVersion: conversations.version });
+
+    if (updated.length > 0) {
+      // Write succeeded — append to the event log (best-effort, non-blocking)
+      void appendConversationEvent(user_id, 'status_changed', {
+        from: previousStatus,
+        to: status,
+        funnel_step,
+        version: updated[0].updatedVersion,
+      });
+      return { previousStatus, currentStatus: status };
+    }
+    // Another writer updated the row between our SELECT and UPDATE — retry
+  }
+
+  // Exhausted retries — return best-effort (status read on last attempt)
   return { previousStatus, currentStatus: status };
 }
 
@@ -125,10 +156,8 @@ export async function setConversationPaused(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dbClient: any = db,
 ): Promise<void> {
-  await dbClient
-    .update(conversations)
-    .set({ paused })
-    .where(eq(conversations.user_id, user_id));
+  await dbClient.update(conversations).set({ paused }).where(eq(conversations.user_id, user_id));
+  void appendConversationEvent(user_id, paused ? 'paused' : 'resumed');
 }
 
 export async function deleteConversation(user_id: string): Promise<void> {

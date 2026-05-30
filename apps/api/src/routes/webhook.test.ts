@@ -9,7 +9,7 @@ process.env.ADMIN_API_KEY = 'admin-test';
 process.env.MANYCHAT_WEBHOOK_SECRET = 'webhook-test-secret';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const { webhookLimiter } = require('../middleware/rate-limit') as typeof import('../middleware/rate-limit');
 
 describe('webhookLimiter middleware ordering', () => {

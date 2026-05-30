@@ -1,27 +1,31 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { getConversation, upsertConversation, appendMessage, updateConversationStatus, markExpiredConversations } from '../services/conversation-store';
-import { generateReply, classifyConversation } from '../services/openai-client';
+import { getConversation, upsertConversation, appendMessage } from '../services/conversation-store';
+import { generateReply } from '../services/openai-client';
 import { SYSTEM_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
 import { verifyManychat } from '../middleware/verify-manychat';
 import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
 import { getDirectAnswer } from '../services/direct-answers';
-import { notifyBooking } from '../services/notifications';
 import { resolvePostContext } from '../services/post-context';
 import { getRuntimeKnowledgeContext } from '../services/knowledge-search';
 import { buildInboundEventKey, getStoredInboundResponse, storeInboundResponse } from '../services/inbound-events';
+import { getBoss } from '../services/jobs';
+import type { ClassifyPayload } from '../services/jobs';
 import { Sentry } from '../config/sentry';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
 import { withMcTimeout } from '../lib/mc-timeout';
+import {
+  webhookRequests,
+  webhookDuration,
+  directAnswerHits,
+} from '../lib/metrics';
 
 const router = Router();
 
 const TIMEOUT_REPLY = { version: 'v2', content: { messages: [{ type: 'text', text: "Yo my bad — hit a snag on my end. Send that again and I'll get right back to you 💪" }] } };
-
-let lastExpiryRun = 0;
 
 const bodySchema = z.object({
   user_id: z.string().min(1),
@@ -90,20 +94,18 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     rlog.info('DM received', { platform, user_id, chars: message.length });
   }
 
+  // Outcome label for metrics — set at every exit point inside handle()
+  let outcome = 'error';
+
   const handle = async (): Promise<object> => {
     try {
       if (eventKey) {
         const stored = await getStoredInboundResponse(eventKey);
         if (stored) {
           rlog.info('Duplicate event replayed from store', { platform, user_id });
+          outcome = 'replied';
           return stored;
         }
-      }
-
-      const now = Date.now();
-      if (now - lastExpiryRun >= 5 * 60_000) {
-        lastExpiryRun = now;
-        void markExpiredConversations();
       }
 
       const [activePrompt, botSettings] = await Promise.all([
@@ -113,6 +115,7 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
 
       if (botSettings.botActive === false) {
         rlog.info('Bot disabled — dropping message', { platform, user_id });
+        outcome = 'dropped';
         return { version: 'v2', content: { messages: [] } };
       }
 
@@ -123,15 +126,18 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       if (convo?.paused) {
         await appendMessage(user_id, 'user', message);
         rlog.info('Bot paused — message recorded, no AI reply', { platform, user_id });
+        outcome = 'paused';
         return { version: 'v2', content: { messages: [] } };
       }
 
+      const bookingLink = botSettings.bookingLink ?? env.CALENDLY_URL;
       const priorHistory = convo?.messages.map((m) => ({ role: m.role, content: m.content })) ?? [];
       const history = [...priorHistory, { role: 'user' as const, content: message }];
       const repeatedQuestion = convo ? isRepeatedUserQuestion(convo.messages, message) : false;
 
-      const directAnswer = getDirectAnswer(message, { repeated: repeatedQuestion });
+      const directAnswer = getDirectAnswer(message, { repeated: repeatedQuestion, bookingLink });
       if (directAnswer) {
+        directAnswerHits.inc();
         await appendMessage(user_id, 'user', message);
         for (const aiMessage of directAnswer) {
           await appendMessage(user_id, 'assistant', aiMessage);
@@ -141,17 +147,10 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
           ...history,
           ...directAnswer.map((content) => ({ role: 'assistant' as const, content })),
         ];
-        // classify in background — don't block the ManyChat response
-        void classifyConversation(fullHistory).then((classification) => {
-          if (!classification) { rlog.warn('classify failed — status preserved', { user_id }); return; }
-          return updateConversationStatus(user_id, classification.status, classification.funnelStep).then(
-            ({ previousStatus, currentStatus }) => {
-              if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
-                void notifyBooking({ user_id, first_name: first_name ?? null, platform });
-              }
-            },
-          );
-        }).catch((err) => rlog.error('classify bg error', { user_id, msg: (err as Error).message }));
+        // Enqueue classification as a durable job — survives restarts, safe across instances
+        void getBoss().send('classify-conversation', {
+          user_id, first_name: first_name ?? null, platform, history: fullHistory, reqId: req.id,
+        } satisfies ClassifyPayload).catch((err) => rlog.error('classify enqueue error', { user_id, msg: (err as Error).message }));
 
         if (env.LOG_LEVEL === 'debug') {
           rlog.debug('Direct reply sent', { user_id, reply: directAnswer.join(' | ') });
@@ -159,10 +158,10 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
           rlog.info('Direct reply sent', { platform, user_id });
         }
 
+        outcome = 'direct_answer';
         return { version: 'v2', content: { messages: toManyChatTextMessages(directAnswer) } };
       }
 
-      const bookingLink = botSettings.bookingLink ?? env.CALENDLY_URL;
       let resolvedPrompt = activePrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
       if (convo?.post_context) {
         resolvedPrompt += `\n\n${await resolvePostContext(convo.post_context, platform)}`;
@@ -189,17 +188,10 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         ...history,
         ...aiMessages.map((content) => ({ role: 'assistant' as const, content })),
       ];
-      // classify in background — don't block the ManyChat response
-      void classifyConversation(fullHistory).then((classification) => {
-        if (!classification) { rlog.warn('classify failed — status preserved', { user_id }); return; }
-        return updateConversationStatus(user_id, classification.status, classification.funnelStep).then(
-          ({ previousStatus, currentStatus }) => {
-            if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
-              void notifyBooking({ user_id, first_name: first_name ?? null, platform });
-            }
-          },
-        );
-      }).catch((err) => rlog.error('classify bg error', { user_id, msg: (err as Error).message }));
+      // Enqueue classification as a durable job — survives restarts, safe across instances
+      void getBoss().send('classify-conversation', {
+        user_id, first_name: first_name ?? null, platform, history: fullHistory,
+      } satisfies ClassifyPayload).catch((err) => rlog.error('classify enqueue error', { user_id, msg: (err as Error).message }));
 
       if (env.LOG_LEVEL === 'debug') {
         rlog.debug('AI reply sent', { user_id, reply: aiMessages.join(' | ') });
@@ -207,15 +199,22 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         rlog.info('AI reply sent', { platform, user_id, inChars: message.length, chunks: aiMessages.length });
       }
 
+      outcome = 'replied';
       return { version: 'v2', content: { messages: toManyChatTextMessages(aiMessages) } };
     } catch (err) {
       Sentry.captureException(err, { extra: { user_id: req.body?.user_id, platform: req.body?.platform } });
       rlog.error('Webhook error', { user_id: req.body?.user_id, msg: (err as Error).message });
+      outcome = 'error';
       return TIMEOUT_REPLY;
     }
   };
 
+  const stopDurationTimer = webhookDuration.startTimer({ platform });
   const responsePayload = await withMcTimeout(handle, TIMEOUT_REPLY);
+  // withMcTimeout returns TIMEOUT_REPLY on deadline — if outcome wasn't set by the handler it's a timeout
+  const finalOutcome = responsePayload === TIMEOUT_REPLY && outcome === 'error' ? 'timeout' : outcome;
+  stopDurationTimer({ platform, outcome: finalOutcome });
+  webhookRequests.inc({ platform, outcome: finalOutcome });
   if (eventKey) {
     void storeInboundResponse({ eventKey, userId: user_id, message, responsePayload })
       .catch((err) => rlog.warn('Inbound event store failed', { user_id, msg: (err as Error).message }));

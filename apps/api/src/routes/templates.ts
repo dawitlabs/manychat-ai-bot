@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSettingJson, setSettingJson } from '../services/settings-store';
 import { requireAdmin } from '../middleware/require-admin';
 import { recordAdminAudit } from '../services/admin-audit';
+import { env } from '../config/env';
 
 const templateSchema = z.object({
   id: z.string().min(1).max(64),
@@ -42,7 +43,7 @@ export const DEFAULT_TEMPLATES: ApiTemplates = {
   ],
   closers: [
     { id: 'cl-1', title: 'Pivot to Call', body: "I have a few ideas based on what you shared, but it'd take 10 paragraphs to type out here.", tags: ['pivot', 'call'] },
-    { id: 'cl-2', title: 'Send Booking Link', body: "Sounds good man. Here's the booking link:\nhttps://calendly.com/kyle-briere-largedumbbells/30", tags: ['calendly', 'close'] },
+    { id: 'cl-2', title: 'Send Booking Link', body: `Sounds good man. Here's the booking link:\n${env.CALENDLY_URL}`, tags: ['calendly', 'close'] },
     { id: 'cl-3', title: 'Urgency Close', body: "My calendar has limited space so make sure you book a time now.", tags: ['urgency', 'scarcity'] },
   ],
 };

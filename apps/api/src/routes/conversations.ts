@@ -5,6 +5,7 @@ import { requireAdmin } from '../middleware/require-admin';
 import { recordAdminAudit } from '../services/admin-audit';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
+import { fetchWithRetry } from '../lib/http';
 
 const router = Router();
 
@@ -51,9 +52,10 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
   // Record in DB first — always succeeds even if ManyChat is not configured
   await appendMessage(user_id, 'assistant', text);
 
-  // Attempt delivery via ManyChat
+  // Attempt delivery via ManyChat (8s timeout, up to 2 retries on transient 5xx)
   // Strategy: try sendContent first (works for Facebook), fall back to custom field + flow (works for Instagram)
   const IG_SEND_FLOW_NS = 'content20260527181536_194635';
+  const MC_OPTS = { timeoutMs: 8_000, maxRetries: 2, target: 'manychat' };
   let delivered = false;
   if (env.MANYCHAT_API_KEY) {
     try {
@@ -63,31 +65,43 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
       };
 
       // 1. Try sendContent (works for Facebook subscribers with active window)
-      const mcRes = await fetch('https://api.manychat.com/fb/sending/sendContent', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          subscriber_id: user_id,
-          data: { version: 'v2', content: { messages: [{ type: 'text', text }] } },
-        }),
-      });
+      const mcRes = await fetchWithRetry(
+        'https://api.manychat.com/fb/sending/sendContent',
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            subscriber_id: user_id,
+            data: { version: 'v2', content: { messages: [{ type: 'text', text }] } },
+          }),
+        },
+        MC_OPTS,
+      );
 
       if (mcRes.ok) {
         delivered = true;
       } else {
         // 2. sendContent failed — fall back to custom field + Instagram flow
-        const fieldRes = await fetch('https://api.manychat.com/fb/subscriber/setCustomFieldByName', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ subscriber_id: user_id, field_name: 'ai_response', field_value: text }),
-        });
-
-        if (fieldRes.ok) {
-          const flowRes = await fetch('https://api.manychat.com/fb/sending/sendFlow', {
+        const fieldRes = await fetchWithRetry(
+          'https://api.manychat.com/fb/subscriber/setCustomFieldByName',
+          {
             method: 'POST',
             headers,
-            body: JSON.stringify({ subscriber_id: user_id, flow_ns: IG_SEND_FLOW_NS }),
-          });
+            body: JSON.stringify({ subscriber_id: user_id, field_name: 'ai_response', field_value: text }),
+          },
+          MC_OPTS,
+        );
+
+        if (fieldRes.ok) {
+          const flowRes = await fetchWithRetry(
+            'https://api.manychat.com/fb/sending/sendFlow',
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ subscriber_id: user_id, flow_ns: IG_SEND_FLOW_NS }),
+            },
+            MC_OPTS,
+          );
 
           if (flowRes.ok) {
             delivered = true;
@@ -101,7 +115,8 @@ router.post('/conversations/:user_id/send', requireAdmin, async (req: Request, r
         }
       }
     } catch (err) {
-      rlog.warn('ManyChat send error', { user_id, msg: (err as Error).message });
+      const isTimeout = (err as Error).name === 'AbortError';
+      rlog.warn('ManyChat send error', { user_id, msg: (err as Error).message, timeout: isTimeout });
     }
   }
 

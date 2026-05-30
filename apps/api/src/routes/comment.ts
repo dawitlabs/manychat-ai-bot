@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { upsertConversation, appendMessage, markExpiredConversations } from '../services/conversation-store';
+import { upsertConversation, appendMessage } from '../services/conversation-store';
 import { generateReply } from '../services/openai-client';
 import { COMMENT_REPLY_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
@@ -16,8 +16,6 @@ import { withMcTimeout } from '../lib/mc-timeout';
 const router = Router();
 
 const TIMEOUT_REPLY = { version: 'v2', content: { messages: [{ type: 'text', text: "Hey! Appreciate the comment 🙏 Had a quick tech hiccup — what's your main fitness goal right now?" }] } };
-
-let lastExpiryRun = 0;
 
 const bodySchema = z.object({
   user_id: z.string().min(1),
@@ -46,12 +44,6 @@ router.post('/comment', webhookLimiter, verifyManychat, async (req: Request, res
 
   const handle = async (): Promise<object> => {
     try {
-      const now = Date.now();
-      if (now - lastExpiryRun >= 5 * 60_000) {
-        lastExpiryRun = now;
-        void markExpiredConversations();
-      }
-
       const [activeCommentPrompt, botSettings] = await Promise.all([
         getSettingJson<string>('comment_prompt', COMMENT_REPLY_PROMPT),
         getSettingJson<{ botActive?: boolean; bookingLink?: string }>('bot_settings', {}),

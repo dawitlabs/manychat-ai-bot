@@ -20,6 +20,8 @@ export const conversations = pgTable(
     status: text('status').notNull().default('New'),
     funnel_step: integer('funnel_step').notNull().default(1),
     paused: boolean('paused').notNull().default(false),
+    // Optimistic locking counter — incremented on every status update
+    version: integer('version').notNull().default(1),
     last_activity: timestamp('last_activity', { withTimezone: true }).notNull().defaultNow(),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -101,6 +103,23 @@ export const inboundEvents = pgTable(
   (t) => [
     uniqueIndex('inbound_events_event_key_idx').on(t.event_key),
     index('inbound_events_created_at_idx').on(t.created_at),
+  ],
+);
+
+// Append-only audit log of significant conversation state changes.
+// Immutable after insert — never update or delete rows.
+export const conversationEvents = pgTable(
+  'conversation_events',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    user_id: text('user_id').notNull(),
+    type: text('type').notNull(),
+    payload: jsonb('payload'),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('conversation_events_user_id_idx').on(t.user_id),
+    index('conversation_events_created_at_idx').on(t.created_at),
   ],
 );
 

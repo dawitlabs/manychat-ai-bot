@@ -8,31 +8,33 @@ process.env.ADMIN_API_KEY = 'admin-test';
 process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const { updateConversationStatus, markExpiredConversations, setConversationPaused } = require('./conversation-store') as typeof import('./conversation-store');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function delay(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
 
-// ── mock db client ────────────────────────────────────────────────────────────
+// ── mock db builders ──────────────────────────────────────────────────────────
 
-let mockRows: Array<{ status: string }> = [];
-
-// updateConversationStatus accepts an optional injectable dbClient parameter.
-// We pass a mock that returns controllable rows without touching a real database.
-function makeMockDb() {
+// updateConversationStatus: SELECT returns { status, version }; UPDATE returns .returning([{updatedVersion}])
+function makeStatusMock(
+  rows: Array<{ status: string; version: number }>,
+  updateReturning: Array<{ updatedVersion: number }> = [{ updatedVersion: 2 }],
+) {
   return {
     select: () => ({
       from: () => ({
         where: () => ({
-          limit: async () => mockRows,
+          limit: async () => rows,
         }),
       }),
     }),
     update: () => ({
       set: () => ({
-        where: async () => {},
+        where: () => ({
+          returning: async () => updateReturning,
+        }),
       }),
     }),
   };
@@ -71,7 +73,6 @@ describe('setConversationPaused', () => {
 describe('markExpiredConversations', () => {
   it('sets status=Archived and respects custom TTL from settings', async () => {
     let setArg: Record<string, unknown> = {};
-    let cutoffArg: Date | undefined;
 
     const mockDb = {
       update: () => ({
@@ -84,15 +85,11 @@ describe('markExpiredConversations', () => {
       }),
     };
 
-    // Stub settings to return a 1-hour TTL
-    const before = new Date();
     const mockSettings = async () => ({ ttl: 1 });
 
     await markExpiredConversations(mockDb, mockSettings);
 
     assert.equal(setArg.status, 'Archived', 'must archive leads, never anything else');
-    void cutoffArg; // cutoff timing is validated by integration tests against a real DB
-    void before;
   });
 
   it('debounce: second call within 5 min window is skipped', async () => {
@@ -106,8 +103,6 @@ describe('markExpiredConversations', () => {
     };
     const mockSettings = async () => ({ ttl: 1 });
 
-    // The debounce lives in webhook.ts (module-level lastExpiryRun), not in
-    // markExpiredConversations itself.  Here we verify the guard logic inline.
     let lastRun = 0;
     async function debouncedMark() {
       const now = Date.now();
@@ -125,33 +120,66 @@ describe('markExpiredConversations', () => {
 });
 
 describe('updateConversationStatus', () => {
-  beforeEach(() => {
-    mockRows = [];
-  });
+  beforeEach(() => {});
 
   it('returns currentStatus = the new status', async () => {
-    mockRows = [{ status: 'New' }];
-    const result = await updateConversationStatus('u1', 'Booked', 6, makeMockDb());
+    const mockDb = makeStatusMock([{ status: 'New', version: 1 }]);
+    const result = await updateConversationStatus('u1', 'Booked', 6, mockDb);
     assert.equal(result.currentStatus, 'Booked');
   });
 
   it('returns previousStatus from the DB row', async () => {
-    mockRows = [{ status: 'Qualified' }];
-    const result = await updateConversationStatus('u1', 'Booked', 6, makeMockDb());
+    const mockDb = makeStatusMock([{ status: 'Qualified', version: 1 }]);
+    const result = await updateConversationStatus('u1', 'Booked', 6, mockDb);
     assert.equal(result.previousStatus, 'Qualified');
   });
 
   it('uses the new status as previousStatus when the row is missing (new lead)', async () => {
-    mockRows = [];
-    const result = await updateConversationStatus('u1', 'New', 1, makeMockDb());
+    const mockDb = makeStatusMock([]);
+    const result = await updateConversationStatus('u1', 'New', 1, mockDb);
     assert.equal(result.previousStatus, 'New');
     assert.equal(result.currentStatus, 'New');
   });
 
-  it('Booked→Booked: both sides return Booked', async () => {
-    mockRows = [{ status: 'Booked' }];
-    const result = await updateConversationStatus('u1', 'Booked', 6, makeMockDb());
+  it('Booked→Booked: both sides return Booked (early-exit on same status)', async () => {
+    const mockDb = makeStatusMock([{ status: 'Booked', version: 3 }]);
+    const result = await updateConversationStatus('u1', 'Booked', 6, mockDb);
     assert.equal(result.previousStatus, 'Booked');
     assert.equal(result.currentStatus, 'Booked');
+  });
+
+  it('retries when the UPDATE returns 0 rows (optimistic locking conflict)', async () => {
+    // First call: SELECT returns version 1, UPDATE returns 0 rows (conflict)
+    // Second call: SELECT returns version 2, UPDATE succeeds
+    let selectCall = 0;
+    let updateCall = 0;
+    const mockDb = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: async () => {
+              selectCall++;
+              return selectCall === 1
+                ? [{ status: 'New', version: 1 }]
+                : [{ status: 'New', version: 2 }];
+            },
+          }),
+        }),
+      }),
+      update: () => ({
+        set: () => ({
+          where: () => ({
+            returning: async () => {
+              updateCall++;
+              return updateCall === 1 ? [] : [{ updatedVersion: 3 }];
+            },
+          }),
+        }),
+      }),
+    };
+    const result = await updateConversationStatus('u1', 'Engaged', 2, mockDb);
+    assert.equal(result.currentStatus, 'Engaged');
+    assert.equal(selectCall, 2, 'should SELECT twice (one retry)');
+    assert.equal(updateCall, 2, 'should attempt UPDATE twice');
   });
 });

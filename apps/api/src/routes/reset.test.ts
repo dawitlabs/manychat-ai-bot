@@ -10,7 +10,7 @@ process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
 import type { Request, Response } from 'express';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const { requireAdmin } = require('../middleware/require-admin') as typeof import('../middleware/require-admin');
 
 function makeReq(

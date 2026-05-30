@@ -8,7 +8,6 @@ process.env.ADMIN_API_KEY = 'admin-knowledge-test';
 process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const {
   formatKnowledgeContext,
   rankKnowledgeSnippets,
