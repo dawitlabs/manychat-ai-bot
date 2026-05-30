@@ -9,6 +9,9 @@ import { verifyManychat } from '../middleware/verify-manychat';
 import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
 import { getDirectAnswer } from '../services/direct-answers';
 import { notifyBooking } from '../services/notifications';
+import { resolvePostContext } from '../services/post-context';
+import { getRuntimeKnowledgeContext } from '../services/knowledge-search';
+import { buildInboundEventKey, getStoredInboundResponse, storeInboundResponse } from '../services/inbound-events';
 import { Sentry } from '../config/sentry';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
@@ -25,7 +28,32 @@ const bodySchema = z.object({
   message: z.string().min(1),
   first_name: z.string().optional(),
   platform: z.enum(['instagram', 'facebook']).optional().default('instagram'),
+  post_context: z.string().optional(),
+  message_id: z.string().optional(),
+  event_id: z.string().optional(),
+  external_message_id: z.string().optional(),
+  manychat_event_id: z.string().optional(),
 });
+
+function normalizeRepeatedText(message: string): string {
+  return message
+    .toLowerCase()
+    .replace(/[^\w\s']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isRepeatedUserQuestion(
+  messages: Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>,
+  message: string,
+): boolean {
+  const normalized = normalizeRepeatedText(message);
+  if (!normalized) return false;
+  const recentUserMessages = messages
+    .filter((entry) => entry.role === 'user')
+    .slice(-3);
+  return recentUserMessages.some((entry) => normalizeRepeatedText(entry.content) === normalized);
+}
 
 router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res: Response) => {
   const parsed = bodySchema.safeParse(req.body);
@@ -34,9 +62,27 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     return;
   }
 
-  const { user_id, message, first_name, platform } = parsed.data;
+  const {
+    user_id,
+    message,
+    first_name,
+    platform,
+    post_context,
+    message_id,
+    event_id,
+    external_message_id,
+    manychat_event_id,
+  } = parsed.data;
   const source = platform === 'facebook' ? 'facebook_dm' : 'instagram_dm';
   const rlog = log.withRequest(req);
+  const eventKey = buildInboundEventKey({
+    platform,
+    userId: user_id,
+    messageId: message_id,
+    eventId: event_id,
+    externalMessageId: external_message_id,
+    manychatEventId: manychat_event_id,
+  });
 
   if (env.LOG_LEVEL === 'debug') {
     rlog.debug('DM received', { platform, user_id, message });
@@ -46,6 +92,14 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
 
   const handle = async (): Promise<object> => {
     try {
+      if (eventKey) {
+        const stored = await getStoredInboundResponse(eventKey);
+        if (stored) {
+          rlog.info('Duplicate event replayed from store', { platform, user_id });
+          return stored;
+        }
+      }
+
       const now = Date.now();
       if (now - lastExpiryRun >= 5 * 60_000) {
         lastExpiryRun = now;
@@ -62,7 +116,7 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         return { version: 'v2', content: { messages: [] } };
       }
 
-      await upsertConversation({ user_id, first_name: first_name ?? null, platform, source });
+      await upsertConversation({ user_id, first_name: first_name ?? null, platform, source, post_context });
 
       const convo = await getConversation(user_id);
 
@@ -74,8 +128,9 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
 
       const priorHistory = convo?.messages.map((m) => ({ role: m.role, content: m.content })) ?? [];
       const history = [...priorHistory, { role: 'user' as const, content: message }];
+      const repeatedQuestion = convo ? isRepeatedUserQuestion(convo.messages, message) : false;
 
-      const directAnswer = getDirectAnswer(message);
+      const directAnswer = getDirectAnswer(message, { repeated: repeatedQuestion });
       if (directAnswer) {
         await appendMessage(user_id, 'user', message);
         for (const aiMessage of directAnswer) {
@@ -110,7 +165,16 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       const bookingLink = botSettings.bookingLink ?? env.CALENDLY_URL;
       let resolvedPrompt = activePrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
       if (convo?.post_context) {
-        resolvedPrompt += `\n\nCONTEXT: This lead came from a post about "${convo.post_context}". Keep this topic in mind and reference it naturally when relevant.`;
+        resolvedPrompt += `\n\n${await resolvePostContext(convo.post_context, platform)}`;
+      }
+      const knowledgeContext = await getRuntimeKnowledgeContext(
+        [...priorHistory.slice(-6).map((entry) => entry.content), message].join('\n'),
+      );
+      if (knowledgeContext) {
+        resolvedPrompt += `\n\n${knowledgeContext}`;
+      }
+      if (repeatedQuestion) {
+        resolvedPrompt += '\n\nREPEATED QUESTION: The lead repeated the same message. Treat that as a signal the previous answer was not clear enough. Answer more directly, be specific, and move the conversation forward without repeating the same wording.';
       }
 
       const aiReply = await generateReply(resolvedPrompt, history, { userId: user_id });
@@ -151,7 +215,12 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     }
   };
 
-  res.json(await withMcTimeout(handle, TIMEOUT_REPLY));
+  const responsePayload = await withMcTimeout(handle, TIMEOUT_REPLY);
+  if (eventKey) {
+    void storeInboundResponse({ eventKey, userId: user_id, message, responsePayload })
+      .catch((err) => rlog.warn('Inbound event store failed', { user_id, msg: (err as Error).message }));
+  }
+  res.json(responsePayload);
 });
 
 export default router;

@@ -24,6 +24,30 @@ describe('getDirectAnswer', () => {
     ]);
   });
 
+  it('answers offer questions directly', () => {
+    assert.deepEqual(getDirectAnswer('Possibly, what is it you offer exactly'), [
+      'I build the meal plan, grocery list, and workout split around your life and goals.',
+      "Then it's all programmed into a simple app so you know exactly what to do each week.",
+      "Based on what you shared, I'd show you how to build muscle without living in the gym. Want me to send the link for a quick 20 min call?",
+    ]);
+  });
+
+  it('answers busy muscle-building questions with a specific next question', () => {
+    assert.deepEqual(getDirectAnswer('I’m looking to build muscle but don’t have much time to go to the gym'), [
+      "That's exactly the kind of thing I help with.",
+      'I would build you a simple lifting split around the time you actually have, then pair it with nutrition that supports muscle gain.',
+      "What's a realistic amount of days you can train each week?",
+    ]);
+  });
+
+  it('gives a clearer fallback when the same message is repeated', () => {
+    assert.deepEqual(getDirectAnswer('same vague thing again', { repeated: true }), [
+      'Totally fair - let me answer that more clearly.',
+      'I build the meal plan, grocery list, and workout split around your schedule, then put it into a simple app so you know exactly what to do.',
+      'The goal is structure and planning so you can make progress without guessing every week.',
+    ]);
+  });
+
   it('does not intercept normal funnel replies', () => {
     assert.equal(getDirectAnswer('I am just struggling with consistency'), null);
   });

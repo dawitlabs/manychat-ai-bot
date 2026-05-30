@@ -18,6 +18,8 @@ import botSettingsRouter from './routes/bot-settings';
 import leadsRouter from './routes/leads';
 import analyticsRouter from './routes/analytics';
 import templatesRouter from './routes/templates';
+import postsRouter from './routes/posts';
+import knowledgeRouter from './routes/knowledge';
 import { env } from './config/env';
 import { log } from './lib/logger';
 
@@ -46,6 +48,8 @@ app.use(botSettingsRouter);
 app.use(leadsRouter);
 app.use(analyticsRouter);
 app.use(templatesRouter);
+app.use(postsRouter);
+app.use(knowledgeRouter);
 
 setupExpressErrorHandler(app);
 app.use(errorHandler);

@@ -71,6 +71,22 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
+        title: 'AI Knowledge',
+        url: '/dashboard/knowledge',
+        icon: 'sparkles',
+        isActive: false,
+        shortcut: ['a', 'k'],
+        items: []
+      },
+      {
+        title: 'Post Library',
+        url: '/dashboard/posts',
+        icon: 'video',
+        isActive: false,
+        shortcut: ['p', 'l'],
+        items: []
+      },
+      {
         title: 'Objection Handlers',
         url: '/dashboard/objections',
         icon: 'shield',

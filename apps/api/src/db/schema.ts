@@ -1,4 +1,4 @@
-import { pgTable, text, bigserial, timestamp, index, serial, integer, jsonb, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, bigserial, timestamp, index, uniqueIndex, serial, integer, jsonb, boolean } from 'drizzle-orm/pg-core';
 
 export const admins = pgTable('admins', {
   id: serial('id').primaryKey(),
@@ -55,6 +55,54 @@ export const adminAudit = pgTable('admin_audit', {
   metadata: jsonb('metadata'),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const posts = pgTable('posts', {
+  slug: text('slug').primaryKey(),
+  title: text('title').notNull(),
+  hook: text('hook'),
+  key_points: text('key_points'),
+  transcript: text('transcript'),
+  cta: text('cta'),
+  platform: text('platform').notNull().default('both'),
+  active: boolean('active').notNull().default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const knowledgeItems = pgTable(
+  'knowledge_items',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    category: text('category').notNull().default('general'),
+    tags: jsonb('tags').$type<string[]>().notNull().default([]),
+    source_url: text('source_url'),
+    active: boolean('active').notNull().default(true),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('knowledge_items_active_idx').on(t.active),
+    index('knowledge_items_category_idx').on(t.category),
+  ],
+);
+
+export const inboundEvents = pgTable(
+  'inbound_events',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    event_key: text('event_key').notNull(),
+    user_id: text('user_id').notNull(),
+    message: text('message').notNull(),
+    response_payload: jsonb('response_payload'),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('inbound_events_event_key_idx').on(t.event_key),
+    index('inbound_events_created_at_idx').on(t.created_at),
+  ],
+);
 
 export const openaiUsage = pgTable(
   'openai_usage',

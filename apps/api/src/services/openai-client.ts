@@ -113,6 +113,54 @@ export async function classifyConversation(
   }
 }
 
+export interface PostExtraction {
+  slug: string;
+  title: string;
+  hook: string | null;
+  key_points: string | null;
+  cta: string | null;
+  platform: 'instagram' | 'facebook' | 'both';
+}
+
+const EXTRACT_SYSTEM = `You extract structured data from an Instagram or Facebook post caption or script.
+
+Return ONLY valid JSON with these exact fields:
+- slug: lowercase kebab-case id (2–5 words, e.g. "fat-loss-mistakes", "meal-prep-sunday")
+- title: short descriptive title (max 80 chars)
+- hook: the opening hook or most attention-grabbing sentence (max 200 chars, null if none)
+- key_points: comma-separated main topics covered (max 300 chars, null if none)
+- cta: what viewers were told to do, e.g. "DM me coach to get started" (max 150 chars, null if none)
+- platform: "instagram", "facebook", or "both" — infer from any URL or context clues, default "both"
+
+No markdown. No explanation. Only JSON.`;
+
+export async function extractPostContent(text: string): Promise<PostExtraction> {
+  const model = 'gpt-4o-mini';
+  const completion = await withRetry(() =>
+    openai.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: EXTRACT_SYSTEM },
+        { role: 'user', content: text.slice(0, 8000) },
+      ],
+      max_tokens: 300,
+      temperature: 0,
+    }),
+  );
+  void logUsage(model, completion.usage ?? undefined);
+  const raw = (completion.choices[0].message.content?.trim() ?? '{}')
+    .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const parsed = JSON.parse(raw) as Partial<PostExtraction>;
+  return {
+    slug: parsed.slug ?? 'new-post',
+    title: parsed.title ?? 'Untitled Post',
+    hook: parsed.hook ?? null,
+    key_points: parsed.key_points ?? null,
+    cta: parsed.cta ?? null,
+    platform: (['instagram', 'facebook', 'both'] as const).includes(parsed.platform as 'instagram') ? (parsed.platform as PostExtraction['platform']) : 'both',
+  };
+}
+
 export async function generateReply(
   systemPrompt: string,
   messageHistory: Array<{ role: 'user' | 'assistant'; content: string }>,

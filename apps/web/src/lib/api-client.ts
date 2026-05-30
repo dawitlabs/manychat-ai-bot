@@ -58,6 +58,31 @@ export interface ApiTemplates {
   closers: ApiTemplate[];
 }
 
+export interface ApiPost {
+  slug: string;
+  title: string;
+  hook: string | null;
+  key_points: string | null;
+  transcript: string | null;
+  cta: string | null;
+  platform: string;
+  active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface ApiKnowledgeItem {
+  id: number;
+  title: string;
+  body: string;
+  category: string;
+  tags: string[];
+  source_url: string | null;
+  active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
 export interface ApiHealth {
   status: string;
   uptime: number;
@@ -105,6 +130,14 @@ async function fetchHealth(): Promise<ApiHealth> {
   return get<ApiHealth>(`${PROXY}/health`);
 }
 
+async function fetchPosts(): Promise<ApiPost[]> {
+  return get<ApiPost[]>(`${PROXY}/posts`);
+}
+
+async function fetchKnowledge(): Promise<ApiKnowledgeItem[]> {
+  return get<ApiKnowledgeItem[]>(`${PROXY}/knowledge`);
+}
+
 function getCsrfToken(): string {
   if (typeof document === 'undefined') return '';
   return document.cookie.split('; ').find((c) => c.startsWith('__Host-csrf='))?.split('=')[1] ?? '';
@@ -142,6 +175,47 @@ export async function saveBotSettings(data: Partial<ApiBotSettings>): Promise<vo
 
 export async function saveTemplates(data: Partial<ApiTemplates>): Promise<void> {
   await assertOk(await mutate(`${PROXY}/templates`, 'PUT', data));
+}
+
+export interface ApiPostExtraction {
+  slug: string;
+  title: string;
+  hook: string | null;
+  key_points: string | null;
+  cta: string | null;
+  platform: 'instagram' | 'facebook' | 'both';
+}
+
+export async function extractPost(text: string): Promise<ApiPostExtraction> {
+  const res = await mutate(`${PROXY}/posts/extract`, 'POST', { text });
+  await assertOk(res);
+  return res.json() as Promise<ApiPostExtraction>;
+}
+
+export async function upsertPost(slug: string, data: Omit<ApiPost, 'slug' | 'created_at' | 'updated_at'>): Promise<ApiPost> {
+  const res = await mutate(`${PROXY}/posts/${encodeURIComponent(slug)}`, 'PUT', data);
+  await assertOk(res);
+  return res.json() as Promise<ApiPost>;
+}
+
+export async function deletePost(slug: string): Promise<void> {
+  await assertOk(await mutate(`${PROXY}/posts/${encodeURIComponent(slug)}`, 'DELETE'));
+}
+
+export async function createKnowledgeItem(data: Omit<ApiKnowledgeItem, 'id' | 'created_at' | 'updated_at'>): Promise<ApiKnowledgeItem> {
+  const res = await mutate(`${PROXY}/knowledge`, 'POST', data);
+  await assertOk(res);
+  return res.json() as Promise<ApiKnowledgeItem>;
+}
+
+export async function updateKnowledgeItem(id: number, data: Omit<ApiKnowledgeItem, 'id' | 'created_at' | 'updated_at'>): Promise<ApiKnowledgeItem> {
+  const res = await mutate(`${PROXY}/knowledge/${id}`, 'PUT', data);
+  await assertOk(res);
+  return res.json() as Promise<ApiKnowledgeItem>;
+}
+
+export async function deleteKnowledgeItem(id: number): Promise<void> {
+  await assertOk(await mutate(`${PROXY}/knowledge/${id}`, 'DELETE'));
 }
 
 export async function resetAllConversations(): Promise<void> {
@@ -200,6 +274,18 @@ export const healthQueryOptions = queryOptions({
   retry: 0,
 });
 
+export const postsQueryOptions = queryOptions({
+  queryKey: ['posts'],
+  queryFn: fetchPosts,
+  retry: 1,
+});
+
+export const knowledgeQueryOptions = queryOptions({
+  queryKey: ['knowledge'],
+  queryFn: fetchKnowledge,
+  retry: 1,
+});
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useLeads() {
@@ -247,6 +333,14 @@ export function useTemplates() {
 
 export function useHealth() {
   return useQuery(healthQueryOptions);
+}
+
+export function usePosts() {
+  return useQuery(postsQueryOptions);
+}
+
+export function useKnowledge() {
+  return useQuery(knowledgeQueryOptions);
 }
 
 // ── Mapper ────────────────────────────────────────────────────────────────────

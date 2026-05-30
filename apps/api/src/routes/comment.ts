@@ -7,6 +7,7 @@ import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
 import { verifyManychat } from '../middleware/verify-manychat';
 import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
+import { resolvePostContext } from '../services/post-context';
 import { Sentry } from '../config/sentry';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
@@ -63,12 +64,14 @@ router.post('/comment', webhookLimiter, verifyManychat, async (req: Request, res
 
       const bookingLink = botSettings.bookingLink ?? env.CALENDLY_URL;
       const resolvedPrompt = activeCommentPrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
+
       const postLine = post_context
-        ? `The post they commented on was about: "${post_context}". Reference this naturally in your opening — e.g. "saw you commented on my ${post_context} post".`
+        ? `\n\n${await resolvePostContext(post_context, platform)}\n\nReference the specific post content naturally in your opening DM.`
         : '';
+
       const aiReply = await generateReply(
         resolvedPrompt,
-        [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}". ${postLine} Write the opening DM.` }],
+        [{ role: 'user', content: `The person's name is "${name}". They commented: "${comment_text}".${postLine} Write the opening DM.` }],
         {},
       );
       const aiMessages = formatKyleReply(aiReply, { maxMessages: 2 });
