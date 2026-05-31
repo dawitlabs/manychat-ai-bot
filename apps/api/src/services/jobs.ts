@@ -115,6 +115,14 @@ export async function startJobs(): Promise<void> {
 
   await boss.start();
 
+  // pg-boss v10+ requires queues to exist before workers can subscribe
+  await Promise.all([
+    boss.createQueue('classify-conversation'),
+    boss.createQueue('notify-booking'),
+    boss.createQueue('deliver-reply'),
+    boss.createQueue('expire-conversations'),
+  ]);
+
   // Workers — localConcurrency controls parallelism within this process instance
   await boss.work<ClassifyPayload>('classify-conversation', { localConcurrency: 2 }, classifyWorker);
   await boss.work<NotifyBookingPayload>('notify-booking', notifyWorker);
