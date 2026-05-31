@@ -7,24 +7,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Icons } from '@/components/icons';
-import { useLeads, useStats, deriveWeeklyPerformance, deriveMonthlyTrend } from '@/lib/api-client';
+import { useLeads, useStats, useBotSettings, deriveWeeklyPerformance, deriveMonthlyTrend } from '@/lib/api-client';
 
 const trendConfig = {
   leads: { label: 'New Leads', color: 'var(--chart-1)' },
   calls: { label: 'Calls Booked', color: 'var(--chart-2)' },
 } satisfies ChartConfig;
 
-const AVG_DEAL_SIZE = 2850;
-const EST_CLOSE_RATE = 0.35;
-
 export function ReportsView() {
   const { leads } = useLeads();
   const { data: stats } = useStats();
+  const { data: settings } = useBotSettings();
+
+  const avgDealSize = settings?.avgDealSize ?? 2850;
+  const estCloseRate = settings?.estCloseRate ?? 0.35;
 
   const totalLeads = stats?.totalLeads ?? 0;
   const callsBooked = stats?.callsBooked ?? 0;
-  const estCloses = Math.round(totalLeads * EST_CLOSE_RATE);
-  const estRevenue = estCloses * AVG_DEAL_SIZE;
+  const estCloses = Math.round(totalLeads * estCloseRate);
+  const estRevenue = estCloses * avgDealSize;
 
   const weeklyPerformance = deriveWeeklyPerformance(leads);
   const monthlyTrend = deriveMonthlyTrend(leads);
@@ -52,7 +53,7 @@ export function ReportsView() {
             ${estRevenue.toLocaleString()}
           </CardTitle>
           <p className='text-muted-foreground text-sm mt-1'>
-            Based on {(EST_CLOSE_RATE * 100).toFixed(0)}% est. close rate × ${AVG_DEAL_SIZE.toLocaleString()} avg program value
+            Based on {(estCloseRate * 100).toFixed(0)}% est. close rate × ${avgDealSize.toLocaleString()} avg program value
           </p>
         </CardHeader>
         <CardContent>
@@ -66,7 +67,7 @@ export function ReportsView() {
               <p className='text-muted-foreground text-xs mt-1'>Calls Booked</p>
             </div>
             <div className='rounded-lg bg-background/50 border border-border/50 p-3 text-center'>
-              <p className='text-2xl font-bold tabular-nums'>${AVG_DEAL_SIZE.toLocaleString()}</p>
+              <p className='text-2xl font-bold tabular-nums'>${avgDealSize.toLocaleString()}</p>
               <p className='text-muted-foreground text-xs mt-1'>Avg Deal Size</p>
             </div>
           </div>
@@ -129,7 +130,7 @@ export function ReportsView() {
                 <div className='grid grid-cols-3 gap-2 text-center'>
                   <div><p className='text-xl font-bold text-green-400'>{bestWeek.newLeads}</p><p className='text-xs text-muted-foreground'>Leads</p></div>
                   <div><p className='text-xl font-bold text-green-400'>{bestWeek.booked}</p><p className='text-xs text-muted-foreground'>Booked</p></div>
-                  <div><p className='text-xl font-bold text-green-400'>${(bestWeek.booked * AVG_DEAL_SIZE).toLocaleString()}</p><p className='text-xs text-muted-foreground'>Est. Revenue</p></div>
+                  <div><p className='text-xl font-bold text-green-400'>${(bestWeek.booked * avgDealSize).toLocaleString()}</p><p className='text-xs text-muted-foreground'>Est. Revenue</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -147,7 +148,7 @@ export function ReportsView() {
                 <div className='grid grid-cols-3 gap-2 text-center'>
                   <div><p className='text-xl font-bold text-red-400'>{worstWeek.newLeads}</p><p className='text-xs text-muted-foreground'>Leads</p></div>
                   <div><p className='text-xl font-bold text-red-400'>{worstWeek.booked}</p><p className='text-xs text-muted-foreground'>Booked</p></div>
-                  <div><p className='text-xl font-bold text-red-400'>${(worstWeek.booked * AVG_DEAL_SIZE).toLocaleString()}</p><p className='text-xs text-muted-foreground'>Est. Revenue</p></div>
+                  <div><p className='text-xl font-bold text-red-400'>${(worstWeek.booked * avgDealSize).toLocaleString()}</p><p className='text-xs text-muted-foreground'>Est. Revenue</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -193,7 +194,7 @@ export function ReportsView() {
                       }>{row.conversionRate}</Badge>
                     </TableCell>
                     <TableCell className='text-right tabular-nums font-medium text-primary'>
-                      ${(row.booked * AVG_DEAL_SIZE).toLocaleString()}
+                      ${(row.booked * avgDealSize).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 ))}

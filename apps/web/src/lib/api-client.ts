@@ -33,6 +33,21 @@ export interface ApiBotSettings {
   ttl: number;
   maxHistory: number;
   bookingLink: string;
+  instagramUrl: string;
+  facebookUrl: string;
+  avgDealSize: number;
+  estCloseRate: number;
+}
+
+export type ApiEventType = 'status_changed' | 'booked' | 'paused' | 'resumed';
+
+export interface ApiEvent {
+  id: number;
+  user_id: string;
+  first_name: string | null;
+  type: ApiEventType;
+  payload: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export interface ApiStats {
@@ -49,6 +64,8 @@ export interface ApiTemplate {
   title: string;
   body: string;
   tags: string[];
+  keywords?: string[];
+  trigger?: string;
 }
 
 export interface ApiTemplates {
@@ -136,6 +153,10 @@ async function fetchPosts(): Promise<ApiPost[]> {
 
 async function fetchKnowledge(): Promise<ApiKnowledgeItem[]> {
   return get<ApiKnowledgeItem[]>(`${PROXY}/knowledge`);
+}
+
+async function fetchEvents(): Promise<ApiEvent[]> {
+  return get<ApiEvent[]>(`${PROXY}/events`);
 }
 
 function getCsrfToken(): string {
@@ -286,6 +307,13 @@ export const knowledgeQueryOptions = queryOptions({
   retry: 1,
 });
 
+export const eventsQueryOptions = queryOptions({
+  queryKey: ['events'],
+  queryFn: fetchEvents,
+  refetchInterval: 30_000,
+  retry: 1,
+});
+
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
 export function useLeads() {
@@ -341,6 +369,10 @@ export function usePosts() {
 
 export function useKnowledge() {
   return useQuery(knowledgeQueryOptions);
+}
+
+export function useEvents() {
+  return useQuery(eventsQueryOptions);
 }
 
 // ── Mapper ────────────────────────────────────────────────────────────────────

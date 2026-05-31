@@ -13,8 +13,13 @@ const DEFAULTS = {
   model: 'gpt-4o-mini',
   maxTokens: 220,
   temperature: 0.4,
+  ttl: 23,
   maxHistory: 40,
   bookingLink: env.CALENDLY_URL,
+  instagramUrl: '',
+  facebookUrl: '',
+  avgDealSize: 2850,
+  estCloseRate: 0.35,
 };
 
 const settingsSchema = z.object({
@@ -25,6 +30,10 @@ const settingsSchema = z.object({
   ttl: z.number().int().min(1).max(168).optional(),
   maxHistory: z.number().int().min(2).max(200).optional(),
   bookingLink: z.string().url().optional(),
+  instagramUrl: z.string().optional(),
+  facebookUrl: z.string().optional(),
+  avgDealSize: z.number().positive().optional(),
+  estCloseRate: z.number().min(0).max(1).optional(),
 }).strict();
 
 const router = Router();

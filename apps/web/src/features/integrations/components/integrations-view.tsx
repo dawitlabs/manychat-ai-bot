@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { useLeads, useStats, useHealth } from '@/lib/api-client';
+import { useLeads, useStats, useHealth, useBotSettings } from '@/lib/api-client';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Integration {
@@ -97,6 +97,7 @@ export function IntegrationsView() {
   const { leads } = useLeads();
   const { data: stats } = useStats();
   const { data: health } = useHealth();
+  const { data: settings } = useBotSettings();
 
   const latestActivity = leads.length > 0
     ? formatDistanceToNow(new Date(Math.max(...leads.map((l) => l.lastActivity))), { addSuffix: true })
@@ -146,7 +147,7 @@ export function IntegrationsView() {
       iconBg: 'bg-gradient-to-br from-pink-500 to-purple-600',
       iconEl: <Icons.instagram className='h-5 w-5 text-white' />,
       actionLabel: 'View',
-      actionUrl: 'https://www.instagram.com/largedumbbells/',
+      actionUrl: settings?.instagramUrl || undefined,
     },
     {
       id: 'facebook',
@@ -154,12 +155,12 @@ export function IntegrationsView() {
       description: 'Facebook Page and Messenger integration',
       status: 'connected',
       statusLabel: 'Page connected',
-      detail: 'Large Dumbbells Fitness',
+      detail: settings?.facebookUrl ? new URL(settings.facebookUrl).hostname : 'Not configured',
       lastSync: latestActivity,
       iconBg: 'bg-blue-600',
       iconEl: <Icons.facebook className='h-5 w-5 text-white' />,
       actionLabel: 'View',
-      actionUrl: 'https://www.facebook.com/profile.php?id=61575107498498',
+      actionUrl: settings?.facebookUrl || undefined,
     },
     {
       id: 'openai',
@@ -185,7 +186,7 @@ export function IntegrationsView() {
       iconBg: 'bg-teal-600',
       iconEl: <Icons.calendar className='h-5 w-5 text-white' />,
       actionLabel: 'View calendar',
-      actionUrl: 'https://calendly.com/kyle-briere-largedumbbells/30',
+      actionUrl: settings?.bookingLink || undefined,
     },
     {
       id: 'webhook',

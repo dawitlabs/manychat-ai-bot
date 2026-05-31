@@ -1,30 +1,44 @@
 'use client';
 
+import * as React from 'react';
 import { Icons } from '@/components/icons';
 import PageContainer from '@/components/layout/page-container';
-import { Button } from '@/components/ui/button';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
-import { useNotificationStore } from '../utils/store';
-
-const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
-  'view-product': '/dashboard/product',
-  billing: '/dashboard/billing',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
-};
+import { useEvents } from '@/lib/api-client';
+import { eventToNotification, LAST_SEEN_KEY } from '../utils/event-formatter';
+import type { Notification } from '../utils/event-formatter';
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+  const { data: events = [], isLoading } = useEvents();
   const router = useRouter();
-  const count = unreadCount();
 
-  const unreadNotifications = notifications.filter((n) => n.status === 'unread');
-  const readNotifications = notifications.filter((n) => n.status === 'read');
+  const [lastSeen] = React.useState<number>(() => {
+    if (typeof window === 'undefined') return Date.now();
+    const stored = Number(localStorage.getItem(LAST_SEEN_KEY) ?? '0');
+    // Mark all as seen when viewing the full page
+    const now = Date.now();
+    if (typeof window !== 'undefined') localStorage.setItem(LAST_SEEN_KEY, String(now));
+    return stored;
+  });
 
-  const renderList = (items: typeof notifications) => {
+  const notifications = React.useMemo(
+    () => events.map((e) => eventToNotification(e, lastSeen)),
+    [events, lastSeen],
+  );
+
+  const unread = notifications.filter((n) => n.status === 'unread');
+  const read = notifications.filter((n) => n.status === 'read');
+
+  const renderList = (items: Notification[]) => {
+    if (isLoading) {
+      return (
+        <div className='flex flex-col items-center justify-center py-16'>
+          <Icons.spinner className='text-muted-foreground mb-3 h-6 w-6 animate-spin' />
+        </div>
+      );
+    }
     if (items.length === 0) {
       return (
         <div className='flex flex-col items-center justify-center py-16'>
@@ -33,25 +47,19 @@ export default function NotificationsPage() {
         </div>
       );
     }
-
     return (
       <div className='flex flex-col gap-2'>
-        {items.map((notification) => (
+        {items.map((n) => (
           <NotificationCard
-            key={notification.id}
-            id={notification.id}
-            title={notification.title}
-            body={notification.body}
-            status={notification.status}
-            createdAt={notification.createdAt}
-            actions={notification.actions}
-            onMarkAsRead={markAsRead}
-            onAction={(notifId, actionId) => {
-              const route = actionRoutes[actionId];
-              if (route) {
-                markAsRead(notifId);
-                router.push(route);
-              }
+            key={n.id}
+            id={n.id}
+            title={n.title}
+            body={n.body}
+            status={n.status}
+            createdAt={n.createdAt}
+            actions={n.actions}
+            onAction={(_notifId, _actionId, _type) => {
+              router.push('/dashboard/conversations');
             }}
           />
         ))}
@@ -62,29 +70,22 @@ export default function NotificationsPage() {
   return (
     <PageContainer
       pageTitle='Notifications'
-      pageDescription='View and manage all your notifications.'
-      pageHeaderAction={
-        count > 0 ? (
-          <Button variant='outline' size='sm' onClick={markAllAsRead}>
-            Mark all as read
-          </Button>
-        ) : undefined
-      }
+      pageDescription='Lead activity and conversation events.'
     >
       <Tabs defaultValue='all'>
         <TabsList>
           <TabsTrigger value='all'>All ({notifications.length})</TabsTrigger>
-          <TabsTrigger value='unread'>Unread ({unreadNotifications.length})</TabsTrigger>
-          <TabsTrigger value='read'>Read ({readNotifications.length})</TabsTrigger>
+          <TabsTrigger value='unread'>Unread ({unread.length})</TabsTrigger>
+          <TabsTrigger value='read'>Read ({read.length})</TabsTrigger>
         </TabsList>
         <TabsContent value='all' className='mt-4'>
           {renderList(notifications)}
         </TabsContent>
         <TabsContent value='unread' className='mt-4'>
-          {renderList(unreadNotifications)}
+          {renderList(unread)}
         </TabsContent>
         <TabsContent value='read' className='mt-4'>
-          {renderList(readNotifications)}
+          {renderList(read)}
         </TabsContent>
       </Tabs>
     </PageContainer>

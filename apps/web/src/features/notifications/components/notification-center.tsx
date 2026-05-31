@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -7,33 +8,41 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { NotificationCard } from '@/components/ui/notification-card';
-import { useNotificationStore } from '../utils/store';
-import { useRouter } from 'next/navigation';
+import { useEvents } from '@/lib/api-client';
+import { eventToNotification, LAST_SEEN_KEY } from '../utils/event-formatter';
 
 const MAX_VISIBLE = 5;
 
-const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
-  'view-product': '/dashboard/product',
-  billing: '/dashboard/billing',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
-};
-
 export function NotificationCenter() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
-  const router = useRouter();
-  const count = unreadCount();
-  const visibleNotifications = notifications.slice(0, MAX_VISIBLE);
+  const { data: events = [] } = useEvents();
+  const [lastSeen, setLastSeen] = React.useState<number>(() => {
+    if (typeof window === 'undefined') return Date.now();
+    return Number(localStorage.getItem(LAST_SEEN_KEY) ?? '0');
+  });
+
+  const notifications = React.useMemo(
+    () => events.slice(0, MAX_VISIBLE).map((e) => eventToNotification(e, lastSeen)),
+    [events, lastSeen],
+  );
+
+  const unreadCount = notifications.filter((n) => n.status === 'unread').length;
+
+  function handleOpenChange(open: boolean) {
+    if (open) {
+      const now = Date.now();
+      setLastSeen(now);
+      if (typeof window !== 'undefined') localStorage.setItem(LAST_SEEN_KEY, String(now));
+    }
+  }
 
   return (
-    <Popover>
+    <Popover onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant='ghost' size='icon' className='relative h-8 w-8'>
           <Icons.notification className='h-4 w-4' />
-          {count > 0 && (
+          {unreadCount > 0 && (
             <span className='bg-destructive text-destructive-foreground absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium'>
-              {count > 9 ? '9+' : count}
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
           <span className='sr-only'>Notifications</span>
@@ -45,50 +54,30 @@ export function NotificationCenter() {
             <h4 className='text-sm font-semibold group-hover:underline'>Notifications</h4>
             <Icons.chevronRight className='text-muted-foreground h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5' />
           </Link>
-          <div className='flex items-center gap-2'>
-            {count > 0 && (
-              <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs'>
-                {count} new
-              </span>
-            )}
-            {count > 0 && (
-              <Button
-                variant='ghost'
-                size='sm'
-                className='text-muted-foreground h-auto px-2 py-1 text-xs'
-                onClick={markAllAsRead}
-              >
-                Mark all as read
-              </Button>
-            )}
-          </div>
+          {unreadCount > 0 && (
+            <span className='bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs'>
+              {unreadCount} new
+            </span>
+          )}
         </div>
         <Separator />
         <ScrollArea className='h-[400px]'>
           {notifications.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-12'>
               <Icons.notification className='text-muted-foreground/40 mb-2 h-8 w-8' />
-              <p className='text-muted-foreground text-sm'>No notifications yet</p>
+              <p className='text-muted-foreground text-sm'>No activity yet</p>
             </div>
           ) : (
             <div className='flex flex-col gap-1 p-2'>
-              {visibleNotifications.map((notification) => (
+              {notifications.map((n) => (
                 <NotificationCard
-                  key={notification.id}
-                  id={notification.id}
-                  title={notification.title}
-                  body={notification.body}
-                  status={notification.status}
-                  createdAt={notification.createdAt}
-                  actions={notification.actions}
-                  onMarkAsRead={markAsRead}
-                  onAction={(notifId, actionId) => {
-                    const route = actionRoutes[actionId];
-                    if (route) {
-                      markAsRead(notifId);
-                      router.push(route);
-                    }
-                  }}
+                  key={n.id}
+                  id={n.id}
+                  title={n.title}
+                  body={n.body}
+                  status={n.status}
+                  createdAt={n.createdAt}
+                  actions={n.actions}
                 />
               ))}
             </div>

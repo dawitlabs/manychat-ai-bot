@@ -16,13 +16,6 @@ const sourceConfig = {
   'Comment Trigger': { label: 'Comment Trigger', color: 'var(--chart-3)' },
 } satisfies ChartConfig;
 
-const performanceTips = [
-  { title: 'Acknowledge the struggle first', tip: 'Messages that start with empathy get far more replies than ones that jump straight to the pitch.' },
-  { title: 'Short messages convert better', tip: 'Keep AI messages under 3 sentences. One question, one statement. Walls of text make leads ghost.' },
-  { title: 'Use their words back at them', tip: 'When a lead says "I stress eat" — say "stress eating" back. Pattern matching builds instant trust.' },
-  { title: 'Specific social proof closes', tip: '"Kyle\'s helped 40+ guys in your exact situation" lands better than "Kyle is a great coach."' },
-  { title: 'Offer the call before fully qualified', tip: 'If they\'ve answered 3-4 questions and seem engaged, drop the calendar link. Waiting kills momentum.' },
-];
 
 function EmptyState({ label }: { label: string }) {
   return (
@@ -148,31 +141,6 @@ export function AnalyticsView() {
         </CardContent>
       </Card>
 
-      {/* Top Converting Message Patterns — these are static coaching tips, not data-driven */}
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <Icons.sparkles className='h-5 w-5' />
-            Top Converting Message Patterns
-          </CardTitle>
-          <CardDescription>Patterns from Kyle's proven conversation transcripts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className='grid gap-3 md:grid-cols-2 lg:grid-cols-3'>
-            {performanceTips.map((tip, i) => (
-              <div key={i} className='bg-muted/50 rounded-lg border p-4 space-y-1.5'>
-                <div className='flex items-center gap-2'>
-                  <div className='bg-primary/10 flex h-6 w-6 items-center justify-center rounded-full'>
-                    <Icons.check className='text-primary h-3.5 w-3.5' />
-                  </div>
-                  <p className='text-sm font-semibold'>{tip.title}</p>
-                </div>
-                <p className='text-muted-foreground text-xs leading-relaxed'>{tip.tip}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

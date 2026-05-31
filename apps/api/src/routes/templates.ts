@@ -10,6 +10,8 @@ const templateSchema = z.object({
   title: z.string().min(1).max(120),
   body: z.string().min(1).max(2000),
   tags: z.array(z.string().max(30)).max(10).default([]),
+  keywords: z.array(z.string().max(60)).max(20).optional(),
+  trigger: z.string().max(200).optional(),
 });
 
 const templatesSchema = z.object({
@@ -36,10 +38,12 @@ export const DEFAULT_TEMPLATES: ApiTemplates = {
     { id: 'qu-4', title: 'Ready to Commit', body: "Are you just in a researching phase right now, or ready to make some serious progress?", tags: ['commitment', 'step-4'] },
   ],
   objections: [
-    { id: 'ob-1', title: 'Price Question', body: "We can go over the investment for sure man. But first I gotta know if you're just looking around or genuinely ready to make a change.", tags: ['price', 'deflect'] },
-    { id: 'ob-2', title: 'What Do You Offer?', body: "I provide a complete transformation system with custom nutrition and done-for-you workouts.", tags: ['value', 'offer'] },
-    { id: 'ob-3', title: 'Is the Call Free?', body: "Yeah for sure man, the conversation won't cost you a dime.", tags: ['free', 'call'] },
-    { id: 'ob-4', title: 'Not Sure Yet', body: "No pressure at all man. Just want to make sure I can actually help before we waste each other's time.", tags: ['soft', 'nurture'] },
+    { id: 'ob-1', title: 'Price Question', body: "We can go over the investment for sure man. But first I gotta know if you're just looking around or genuinely ready to make a change.", tags: ['price', 'deflect'], trigger: '"how much is it?" / "what\'s the cost?"', keywords: ['how much', 'cost', 'price', 'expensive', 'investment', 'pay'] },
+    { id: 'ob-2', title: 'What Do You Offer?', body: "I provide a complete transformation system with custom nutrition and done-for-you workouts. Kyle works 1-on-1 with you to figure out exactly what your body needs.", tags: ['value', 'offer'], trigger: '"what exactly do you do?" / "what is this?"', keywords: ['what do you do', 'what is this', 'what exactly', 'tell me more', 'what do you offer'] },
+    { id: 'ob-3', title: 'Is the Call Free?', body: "Yeah for sure man, the conversation won't cost you a dime. It's just a quick 30-min chat to see if Kyle can actually help you.", tags: ['free', 'call'], trigger: '"is this free?" / "will you charge me?"', keywords: ['is this free', 'free', 'charge me', 'cost anything', 'no charge'] },
+    { id: 'ob-4', title: 'Not Sure Yet', body: "No pressure at all man. Just want to make sure I can actually help before we waste each other's time.", tags: ['soft', 'nurture'], trigger: 'No reply for 48h', keywords: [] },
+    { id: 'ob-5', title: 'Tried Before', body: "I hear that man — most programs fail because they're not built for your specific situation. What Kyle does is different because it starts with where YOU are at, not a cookie-cutter plan.", tags: ['skepticism', 'social-proof', 'empathy'], trigger: '"I\'ve tried things before" / "nothing has worked"', keywords: ['tried before', 'nothing works', "doesn't work", 'failed', 'tried everything', 'been there'] },
+    { id: 'ob-6', title: 'Too Busy', body: "Totally get it — Kyle actually built his whole approach around busy guys. Most of his clients work 50-70 hour weeks. The program fits your schedule, not the other way around.", tags: ['time', 'busy', 'reframe'], trigger: '"I\'m too busy" / "I don\'t have time"', keywords: ['too busy', 'no time', "don't have time", 'not enough time', 'work too much', 'schedule'] },
   ],
   closers: [
     { id: 'cl-1', title: 'Pivot to Call', body: "I have a few ideas based on what you shared, but it'd take 10 paragraphs to type out here.", tags: ['pivot', 'call'] },

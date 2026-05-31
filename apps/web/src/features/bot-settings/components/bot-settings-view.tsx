@@ -56,6 +56,10 @@ export function BotSettingsView() {
   const [ttl, setTtl] = React.useState<string | undefined>(undefined);
   const [maxHistory, setMaxHistory] = React.useState<string | undefined>(undefined);
   const [bookingLink, setBookingLink] = React.useState<string | undefined>(undefined);
+  const [instagramUrl, setInstagramUrl] = React.useState<string | undefined>(undefined);
+  const [facebookUrl, setFacebookUrl] = React.useState<string | undefined>(undefined);
+  const [avgDealSize, setAvgDealSize] = React.useState<string | undefined>(undefined);
+  const [estCloseRate, setEstCloseRate] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
     if (!settingsData) return;
@@ -65,7 +69,11 @@ export function BotSettingsView() {
     setTemperature([settingsData.temperature ?? 0.4]);
     setTtl(String(settingsData.ttl ?? 23));
     setMaxHistory(String(settingsData.maxHistory ?? 40));
-    setBookingLink(settingsData.bookingLink ?? 'https://calendly.com/kyle-briere-largedumbbells/30');
+    setBookingLink(settingsData.bookingLink ?? '');
+    setInstagramUrl(settingsData.instagramUrl ?? '');
+    setFacebookUrl(settingsData.facebookUrl ?? '');
+    setAvgDealSize(String(settingsData.avgDealSize ?? 2850));
+    setEstCloseRate(String((settingsData.estCloseRate ?? 0.35) * 100));
   }, [settingsData]);
 
   const persist = async (patch: Record<string, unknown>, label: string) => {
@@ -275,6 +283,85 @@ export function BotSettingsView() {
               <Button onClick={() => save('Booking link', { bookingLink })}>
                 <Icons.check className='mr-2 h-4 w-4' />
                 Save Booking Link
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Revenue & Social Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Revenue & Social Links</CardTitle>
+          <CardDescription>Used in Reports projections and Integrations screen</CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          {!isLoaded ? (
+            <div className='space-y-3'>
+              {[...Array(4)].map((_, i) => <div key={i} className='h-10 animate-pulse rounded bg-muted' />)}
+            </div>
+          ) : (
+            <>
+              <div className='grid gap-4 md:grid-cols-2'>
+                <div className='space-y-2'>
+                  <Label>Avg Deal Size ($)</Label>
+                  <Input
+                    type='number'
+                    value={avgDealSize}
+                    onChange={(e) => setAvgDealSize(e.target.value)}
+                    min='0'
+                    placeholder='2850'
+                  />
+                  <p className='text-muted-foreground text-xs'>Average program value per closed client</p>
+                </div>
+                <div className='space-y-2'>
+                  <Label>Est. Close Rate (%)</Label>
+                  <Input
+                    type='number'
+                    value={estCloseRate}
+                    onChange={(e) => setEstCloseRate(e.target.value)}
+                    min='0'
+                    max='100'
+                    placeholder='35'
+                  />
+                  <p className='text-muted-foreground text-xs'>Expected % of leads that convert</p>
+                </div>
+                <div className='space-y-2'>
+                  <Label>Instagram URL</Label>
+                  <Input
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    placeholder='https://www.instagram.com/yourhandle/'
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label>Facebook URL</Label>
+                  <Input
+                    value={facebookUrl}
+                    onChange={(e) => setFacebookUrl(e.target.value)}
+                    placeholder='https://www.facebook.com/yourpage'
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  const parsedDeal = Number(avgDealSize);
+                  const parsedRate = Number(estCloseRate);
+                  if (!Number.isFinite(parsedDeal) || parsedDeal < 0) return;
+                  if (!Number.isFinite(parsedRate) || parsedRate < 0 || parsedRate > 100) return;
+                  save('Revenue & social settings', {
+                    avgDealSize: parsedDeal,
+                    estCloseRate: parsedRate / 100,
+                    instagramUrl: instagramUrl?.trim() ?? '',
+                    facebookUrl: facebookUrl?.trim() ?? '',
+                  });
+                }}
+                className='w-full sm:w-auto'
+              >
+                <Icons.check className='mr-2 h-4 w-4' />
+                Save Revenue & Social
               </Button>
             </>
           )}
