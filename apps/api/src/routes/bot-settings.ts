@@ -11,7 +11,7 @@ import { log } from '../lib/logger';
 const DEFAULTS = {
   botActive: true,
   model: 'gpt-4o-mini',
-  maxTokens: 220,
+  maxTokens: 350,
   temperature: 0.4,
   ttl: 23,
   maxHistory: 40,
