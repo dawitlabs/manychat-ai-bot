@@ -3,14 +3,14 @@ export interface ManyChatTextMessage {
   text: string;
 }
 
-const DEFAULT_MAX_MESSAGES = 3;
-const DEFAULT_MAX_CHARS = 360;
+const DEFAULT_MAX_MESSAGES = 8;
+const DEFAULT_MAX_CHARS = 700;
 const BOOKING_LINK_PATTERN = /https:\/\/calendly\.com\/[^\s"')]+/i;
 
 function stripLineNoise(line: string): string {
   return line
     .replace(/^\s*(?:Kyle|Message\s*\d+)\s*:\s*/i, '')
-    .replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '')
+    .replace(/^\s*(?:[-*•])\s+/, '')
     .replace(/\*\*/g, '')
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")

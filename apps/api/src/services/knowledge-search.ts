@@ -126,7 +126,7 @@ export function formatKnowledgeContext(snippets: KnowledgeSnippet[]): string {
   });
   return [
     'APPROVED KNOWLEDGE:',
-    'Use these facts when relevant. Do not claim anything beyond them.',
+    'Prefer these facts for program, pricing, and brand specifics. You may also use general fitness knowledge to answer coaching questions.',
     ...lines,
   ].join('\n');
 }

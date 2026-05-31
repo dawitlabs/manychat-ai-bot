@@ -16,7 +16,7 @@ interface BotSettings {
   temperature: number;
 }
 
-const SETTING_DEFAULTS: BotSettings = { model: 'gpt-4o-mini', maxTokens: 220, temperature: 0.4 };
+const SETTING_DEFAULTS: BotSettings = { model: 'gpt-4o-mini', maxTokens: 500, temperature: 0.4 };
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1_000;
