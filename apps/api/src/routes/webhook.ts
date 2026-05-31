@@ -196,7 +196,7 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       if (deadlinePassed) {
         // Deadline already passed — push the real reply via ManyChat API asynchronously
         const combinedText = toManyChatTextMessages(aiMessages)[0].text;
-        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform } satisfies DeliverReplyPayload)
+        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform, messageSeq: fullHistory.length } satisfies DeliverReplyPayload)
           .catch((err) => rlog.error('deliver-reply enqueue error', { user_id, msg: (err as Error).message }));
         rlog.info('AI reply queued for async delivery', { platform, user_id });
         outcome = 'replied_async';

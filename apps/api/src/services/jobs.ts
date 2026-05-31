@@ -5,7 +5,7 @@ import { Sentry } from '../config/sentry';
 import { log } from '../lib/logger';
 import { classifyConversation } from './openai-client';
 import { sendToManychat } from './manychat';
-import { updateConversationStatus, markExpiredConversations } from './conversation-store';
+import { updateConversationStatus, markExpiredConversations, getMessageCount } from './conversation-store';
 import { appendConversationEvent } from './event-log';
 import { notifyBooking } from './notifications';
 import { bookedTransitions } from '../lib/metrics';
@@ -30,6 +30,7 @@ export interface DeliverReplyPayload {
   user_id: string;
   text: string;    // already-formatted, bubbles joined with \n\n
   platform: string;
+  messageSeq?: number; // if set, skip delivery when newer messages have arrived since enqueue
 }
 
 // ── Singleton boss ─────────────────────────────────────────────────────────────
@@ -77,7 +78,14 @@ async function notifyWorker(jobs: Job<NotifyBookingPayload>[]): Promise<void> {
 
 async function deliverReplyWorker(jobs: Job<DeliverReplyPayload>[]): Promise<void> {
   for (const job of jobs) {
-    const { user_id, text } = job.data;
+    const { user_id, text, messageSeq } = job.data;
+    if (messageSeq !== undefined) {
+      const currentCount = await getMessageCount(user_id);
+      if (currentCount > messageSeq) {
+        log.info('[jobs] deliver-reply: skipped — newer messages arrived', { user_id, messageSeq, currentCount });
+        continue;
+      }
+    }
     const delivered = await sendToManychat(user_id, text);
     if (!delivered) {
       log.warn('[jobs] deliver-reply: ManyChat push failed', { user_id });

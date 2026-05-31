@@ -90,7 +90,7 @@ router.post('/comment', webhookLimiter, verifyManychat, async (req: Request, res
 
       if (deadlinePassed) {
         const combinedText = toManyChatTextMessages(aiMessages)[0].text;
-        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform } satisfies DeliverReplyPayload)
+        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform, messageSeq: aiMessages.length } satisfies DeliverReplyPayload)
           .catch((err) => rlog.error('deliver-reply enqueue error', { user_id, msg: (err as Error).message }));
         rlog.info('Opening DM queued for async delivery', { platform, user_id });
         return EMPTY_PAYLOAD;

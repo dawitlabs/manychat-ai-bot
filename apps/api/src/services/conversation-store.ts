@@ -1,4 +1,4 @@
-import { eq, desc, asc, inArray, lt, notInArray, and, SQL } from 'drizzle-orm';
+import { eq, desc, asc, inArray, lt, notInArray, and, SQL, count } from 'drizzle-orm';
 import { db } from '../db/client';
 import { conversations, messages } from '../db/schema';
 import type { Conversation, Platform, Source } from '../domain/conversation';
@@ -68,6 +68,11 @@ export async function upsertConversation(params: {
         // post_context intentionally not overwritten — keep the original post that started the convo
       },
     });
+}
+
+export async function getMessageCount(user_id: string): Promise<number> {
+  const [row] = await db.select({ n: count() }).from(messages).where(eq(messages.user_id, user_id));
+  return row?.n ?? 0;
 }
 
 export async function appendMessage(user_id: string, role: 'user' | 'assistant', content: string): Promise<void> {
