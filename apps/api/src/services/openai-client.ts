@@ -98,6 +98,7 @@ export async function classifyConversation(
         messages: [{ role: 'system', content: CLASSIFY_SYSTEM }, ...history],
         max_tokens: 40,
         temperature: 0,
+        response_format: { type: 'json_object' },
       }),
     );
     stopTimer({ type: 'classify', model });
