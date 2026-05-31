@@ -190,6 +190,12 @@ export async function savePrompts(data: Partial<ApiPrompts>): Promise<void> {
   await assertOk(await mutate(`${PROXY}/prompts`, 'PUT', data));
 }
 
+export async function resetPrompts(): Promise<ApiPrompts> {
+  const res = await mutate(`${PROXY}/prompts`, 'DELETE');
+  await assertOk(res);
+  return res.json() as Promise<ApiPrompts>;
+}
+
 export async function saveBotSettings(data: Partial<ApiBotSettings>): Promise<void> {
   await assertOk(await mutate(`${PROXY}/bot-settings`, 'PUT', data));
 }

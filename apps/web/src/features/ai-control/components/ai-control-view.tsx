@@ -18,7 +18,7 @@ import {
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Icons } from '@/components/icons';
-import { usePrompts, useBotSettings, savePrompts, saveBotSettings } from '@/lib/api-client';
+import { usePrompts, useBotSettings, savePrompts, saveBotSettings, resetPrompts } from '@/lib/api-client';
 
 const DEFAULT_FUNNEL_STEPS = [
   {
@@ -157,12 +157,33 @@ export function AIControlView() {
               rows={18}
               className='font-mono text-sm'
             />
-            <div className='flex items-center justify-between'>
+            <div className='flex items-center justify-between gap-2'>
               <p className='text-muted-foreground text-sm'>{systemPrompt.length} characters</p>
-              <Button onClick={() => save({ systemPrompt })}>
-                <Icons.check className='mr-2 h-4 w-4' />
-                Save System Prompt
-              </Button>
+              <div className='flex gap-2'>
+                <Button
+                  variant='outline'
+                  onClick={async () => {
+                    try {
+                      const defaults = await resetPrompts();
+                      setSystemPrompt(defaults.systemPrompt);
+                      setCommentPrompt(defaults.commentPrompt);
+                      qc.invalidateQueries({ queryKey: ['prompts'] });
+                      toast.success('Prompts reset to default');
+                    } catch {
+                      toast.error('Failed to reset prompts');
+                    }
+                  }}
+                >
+                  Reset to Default
+                </Button>
+                <Button
+                  disabled={!promptsData}
+                  onClick={() => save({ systemPrompt })}
+                >
+                  <Icons.check className='mr-2 h-4 w-4' />
+                  Save System Prompt
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -184,9 +205,12 @@ export function AIControlView() {
               rows={12}
               className='text-sm'
             />
-            <div className='flex items-center justify-between'>
+            <div className='flex items-center justify-between gap-2'>
               <p className='text-muted-foreground text-sm'>{commentPrompt.length} characters</p>
-              <Button onClick={() => save({ commentPrompt })}>
+              <Button
+                disabled={!promptsData}
+                onClick={() => save({ commentPrompt })}
+              >
                 <Icons.check className='mr-2 h-4 w-4' />
                 Save Comment Prompt
               </Button>

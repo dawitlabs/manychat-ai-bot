@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { inArray } from 'drizzle-orm';
+import { db } from '../db/client';
+import { settings } from '../db/schema';
 import { getSettingJson, setSettingJson } from '../services/settings-store';
 import { SYSTEM_PROMPT, COMMENT_REPLY_PROMPT } from '../domain/prompts';
 import { requireAdmin } from '../middleware/require-admin';
@@ -34,6 +37,12 @@ router.put('/prompts', requireAdmin, async (req: Request, res: Response) => {
   if (typeof commentPrompt === 'string') ops.push(setSettingJson('comment_prompt', commentPrompt));
   await Promise.all(ops);
   res.json({ ok: true });
+});
+
+// Clears stored prompts from the DB so the API falls back to the canonical defaults in domain/prompts.ts
+router.delete('/prompts', requireAdmin, async (_req: Request, res: Response) => {
+  await db.delete(settings).where(inArray(settings.key, ['system_prompt', 'comment_prompt']));
+  res.json({ ok: true, systemPrompt: SYSTEM_PROMPT, commentPrompt: COMMENT_REPLY_PROMPT });
 });
 
 export default router;
