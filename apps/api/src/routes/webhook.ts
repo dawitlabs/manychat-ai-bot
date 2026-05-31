@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { getConversation, upsertConversation, appendMessage } from '../services/conversation-store';
+import { getConversation, upsertConversation, appendMessage, getMessageCount } from '../services/conversation-store';
 import { generateReply } from '../services/openai-client';
 import { SYSTEM_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
@@ -196,7 +196,8 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       if (deadlinePassed) {
         // Deadline already passed — push the real reply via ManyChat API asynchronously
         const combinedText = toManyChatTextMessages(aiMessages)[0].text;
-        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform, messageSeq: fullHistory.length } satisfies DeliverReplyPayload)
+        const messageSeq = await getMessageCount(user_id);
+        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform, messageSeq } satisfies DeliverReplyPayload)
           .catch((err) => rlog.error('deliver-reply enqueue error', { user_id, msg: (err as Error).message }));
         rlog.info('AI reply queued for async delivery', { platform, user_id });
         outcome = 'replied_async';
