@@ -3,7 +3,7 @@ export interface ManyChatTextMessage {
   text: string;
 }
 
-const DEFAULT_MAX_MESSAGES = 8;
+const DEFAULT_MAX_MESSAGES = 20;
 const DEFAULT_MAX_CHARS = 700;
 const BOOKING_LINK_PATTERN = /https:\/\/calendly\.com\/[^\s"')]+/i;
 
