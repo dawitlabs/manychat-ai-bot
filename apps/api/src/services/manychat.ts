@@ -57,6 +57,11 @@ export async function sendToManychat(userId: string, text: string): Promise<bool
       return false;
     }
 
+    if (!env.MANYCHAT_IG_FLOW_NS) {
+      log.warn('ManyChat sendFlow skipped — MANYCHAT_IG_FLOW_NS not set', { userId });
+      return false;
+    }
+
     const flowRes = await fetchWithRetry(
       'https://api.manychat.com/fb/sending/sendFlow',
       {
