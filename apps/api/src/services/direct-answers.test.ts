@@ -32,12 +32,8 @@ describe('getDirectAnswer', () => {
     ]);
   });
 
-  it('answers busy muscle-building questions with a specific next question', () => {
-    assert.deepEqual(getDirectAnswer('I’m looking to build muscle but don’t have much time to go to the gym'), [
-      "That's exactly the kind of thing I help with.",
-      'I would build you a simple lifting split around the time you actually have, then pair it with nutrition that supports muscle gain.',
-      "What's a realistic amount of days you can train each week?",
-    ]);
+  it("passes busy muscle-building questions to OpenAI for a natural response", () => {
+    assert.equal(getDirectAnswer("I’m looking to build muscle but don’t have much time to go to the gym"), null);
   });
 
   it('gives a clearer fallback when the same message is repeated', () => {

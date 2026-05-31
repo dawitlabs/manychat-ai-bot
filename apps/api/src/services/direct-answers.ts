@@ -13,16 +13,6 @@ const DIRECT_ANSWER_RULES: Array<{
   },
   {
     match: (message) =>
-      /\b(build muscle|gain muscle|put on muscle|muscle)\b/.test(message) &&
-      /\b(no time|not much time|busy|gym|workout|train)\b/.test(message),
-    messages: [
-      "That's exactly the kind of thing I help with.",
-      'I would build you a simple lifting split around the time you actually have, then pair it with nutrition that supports muscle gain.',
-      "What's a realistic amount of days you can train each week?",
-    ],
-  },
-  {
-    match: (message) =>
       /\b(no time|not much time|busy|hate cooking|meal prep|cook)\b/.test(message) &&
       /\b(cook|food|diet|nutrition|meal|prep)\b/.test(message),
     messages: [
