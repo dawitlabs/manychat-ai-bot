@@ -26,7 +26,18 @@ describe('buildInboundEventKey', () => {
     );
   });
 
-  it('returns null when no stable event id is present', () => {
+  it('returns null when no stable event id and no message', () => {
     assert.equal(buildInboundEventKey({ platform: 'instagram', userId: 'u3' }), null);
+  });
+
+  it('uses content-hash fallback when no stable id but message is provided', () => {
+    const key = buildInboundEventKey({ platform: 'instagram', userId: 'u4', message: 'hello', timestamp: 0 });
+    assert.ok(key?.startsWith('instagram:u4:c:'), `expected content-hash key, got ${key}`);
+    // Same message + same bucket → same key (deterministic)
+    const key2 = buildInboundEventKey({ platform: 'instagram', userId: 'u4', message: 'hello', timestamp: 60_000 });
+    assert.equal(key, key2);
+    // Different 2-minute bucket → different key
+    const key3 = buildInboundEventKey({ platform: 'instagram', userId: 'u4', message: 'hello', timestamp: 120_000 });
+    assert.notEqual(key, key3);
   });
 });

@@ -10,7 +10,7 @@ import { formatKyleReply, toManyChatTextMessages } from '../services/response-fo
 import { getDirectAnswer } from '../services/direct-answers';
 import { resolvePostContext } from '../services/post-context';
 import { getRuntimeKnowledgeContext } from '../services/knowledge-search';
-import { buildInboundEventKey, getStoredInboundResponse, storeInboundResponse } from '../services/inbound-events';
+import { buildInboundEventKey, claimOrGetStoredInboundEvent, storeInboundResponse } from '../services/inbound-events';
 import { getBoss } from '../services/jobs';
 import type { ClassifyPayload, DeliverReplyPayload } from '../services/jobs';
 import { Sentry } from '../config/sentry';
@@ -86,6 +86,7 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     eventId: event_id,
     externalMessageId: external_message_id,
     manychatEventId: manychat_event_id,
+    message,
   });
 
   if (env.LOG_LEVEL === 'debug') {
@@ -100,11 +101,11 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
   const handle = async (): Promise<object> => {
     try {
       if (eventKey) {
-        const stored = await getStoredInboundResponse(eventKey);
-        if (stored) {
-          rlog.info('Duplicate event replayed from store', { platform, user_id });
+        const claim = await claimOrGetStoredInboundEvent(eventKey, user_id, message);
+        if (claim !== 'claimed') {
+          rlog.info('Duplicate event — skipping retry', { platform, user_id });
           outcome = 'replied';
-          return stored;
+          return claim as object;
         }
       }
 
