@@ -47,56 +47,75 @@ export function getBoss(): PgBoss {
 async function classifyWorker(jobs: Job<ClassifyPayload>[]): Promise<void> {
   for (const job of jobs) {
     const { user_id, first_name, platform, history, reqId } = job.data;
+    try {
+      const classification = await classifyConversation(history);
+      if (!classification) {
+        log.warn('[jobs] classify returned null — status preserved', { user_id, reqId });
+        continue;
+      }
 
-    const classification = await classifyConversation(history);
-    if (!classification) {
-      log.warn('[jobs] classify returned null — status preserved', { user_id, reqId });
-      continue;
+      const { previousStatus, currentStatus } = await updateConversationStatus(
+        user_id,
+        classification.status,
+        classification.funnelStep,
+      );
+
+      if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
+        bookedTransitions.inc();
+        void appendConversationEvent(user_id, 'booked', { platform, first_name, reqId });
+        await getBoss().send('notify-booking', { user_id, first_name, platform } satisfies NotifyBookingPayload);
+      }
+
+      log.info('[jobs] classified', { user_id, reqId, status: currentStatus, funnelStep: classification.funnelStep });
+    } catch (err) {
+      log.error('[jobs] classify failed', { user_id, reqId, msg: (err as Error).message });
+      Sentry.captureException(err, { extra: { user_id, reqId } });
     }
-
-    const { previousStatus, currentStatus } = await updateConversationStatus(
-      user_id,
-      classification.status,
-      classification.funnelStep,
-    );
-
-    if (previousStatus !== 'Booked' && currentStatus === 'Booked') {
-      bookedTransitions.inc();
-      void appendConversationEvent(user_id, 'booked', { platform, first_name, reqId });
-      await getBoss().send('notify-booking', { user_id, first_name, platform } satisfies NotifyBookingPayload);
-    }
-
-    log.info('[jobs] classified', { user_id, reqId, status: currentStatus, funnelStep: classification.funnelStep });
   }
 }
 
 async function notifyWorker(jobs: Job<NotifyBookingPayload>[]): Promise<void> {
   for (const job of jobs) {
-    await notifyBooking(job.data);
+    try {
+      await notifyBooking(job.data);
+    } catch (err) {
+      log.error('[jobs] notify-booking failed', { user_id: job.data.user_id, msg: (err as Error).message });
+      Sentry.captureException(err, { extra: { user_id: job.data.user_id } });
+    }
   }
 }
 
 async function deliverReplyWorker(jobs: Job<DeliverReplyPayload>[]): Promise<void> {
   for (const job of jobs) {
     const { user_id, text, messageSeq } = job.data;
-    if (messageSeq !== undefined) {
-      const currentCount = await getMessageCount(user_id);
-      if (currentCount > messageSeq) {
-        log.info('[jobs] deliver-reply: skipped — newer messages arrived', { user_id, messageSeq, currentCount });
-        continue;
+    try {
+      if (messageSeq !== undefined) {
+        const currentCount = await getMessageCount(user_id);
+        if (currentCount > messageSeq) {
+          log.info('[jobs] deliver-reply: skipped — newer messages arrived', { user_id, messageSeq, currentCount });
+          continue;
+        }
       }
-    }
-    const delivered = await sendToManychat(user_id, text);
-    if (!delivered) {
-      log.warn('[jobs] deliver-reply: ManyChat push failed', { user_id });
-    } else {
-      log.info('[jobs] deliver-reply: pushed async reply', { user_id });
+      const delivered = await sendToManychat(user_id, text);
+      if (!delivered) {
+        log.warn('[jobs] deliver-reply: ManyChat push failed', { user_id });
+      } else {
+        log.info('[jobs] deliver-reply: pushed async reply', { user_id });
+      }
+    } catch (err) {
+      log.error('[jobs] deliver-reply failed', { user_id, msg: (err as Error).message });
+      Sentry.captureException(err, { extra: { user_id } });
     }
   }
 }
 
 async function expireWorker(): Promise<void> {
-  await markExpiredConversations();
+  try {
+    await markExpiredConversations();
+  } catch (err) {
+    log.error('[jobs] expire-conversations failed', { msg: (err as Error).message });
+    Sentry.captureException(err);
+  }
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
@@ -117,9 +136,12 @@ export async function startJobs(): Promise<void> {
 
   // pg-boss v10+ requires queues to exist before workers can subscribe
   await Promise.all([
-    boss.createQueue('classify-conversation'),
-    boss.createQueue('notify-booking'),
-    boss.createQueue('deliver-reply'),
+    boss.createQueue('classify-conversation', { retryLimit: 3, retryDelay: 10, deadLetter: 'classify-conversation-dlq' }),
+    boss.createQueue('classify-conversation-dlq'),
+    boss.createQueue('notify-booking', { retryLimit: 5, retryDelay: 30, deadLetter: 'notify-booking-dlq' }),
+    boss.createQueue('notify-booking-dlq'),
+    boss.createQueue('deliver-reply', { retryLimit: 5, retryDelay: 5, deadLetter: 'deliver-reply-dlq' }),
+    boss.createQueue('deliver-reply-dlq'),
     boss.createQueue('expire-conversations'),
   ]);
 

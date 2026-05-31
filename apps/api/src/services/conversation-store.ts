@@ -100,7 +100,7 @@ export async function updateConversationStatus(
       .where(eq(conversations.user_id, user_id))
       .limit(1);
 
-    if (!row) break; // conversation was deleted — nothing to update
+    if (!row) return { previousStatus: status, currentStatus: status }; // conversation doesn't exist — nothing to update
 
     previousStatus = row.status;
     if (previousStatus === status && row.version > 0) {
@@ -131,8 +131,8 @@ export async function updateConversationStatus(
     // Another writer updated the row between our SELECT and UPDATE — retry
   }
 
-  // Exhausted retries — return best-effort (status read on last attempt)
-  return { previousStatus, currentStatus: status };
+  // Exhausted retries — throw so the caller does not act on a fabricated status
+  throw new Error(`updateConversationStatus: optimistic lock exhausted for user ${user_id} after ${MAX_LOCK_RETRIES} retries`);
 }
 
 export async function markExpiredConversations(

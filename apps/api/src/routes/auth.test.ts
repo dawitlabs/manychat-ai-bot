@@ -6,8 +6,8 @@ import { promisify } from 'node:util';
 process.env.OPENAI_API_KEY = 'sk-test';
 process.env.DATABASE_URL = 'postgres://localhost/test';
 process.env.WEB_ORIGIN = 'http://localhost:3001';
-process.env.ADMIN_API_KEY = 'admin-test';
-process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret';
+process.env.ADMIN_API_KEY = 'admin-test-key-at-least-32-chars!!';
+process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret-at-least-32-chars-long!!';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
 const scryptAsync = promisify(scrypt);

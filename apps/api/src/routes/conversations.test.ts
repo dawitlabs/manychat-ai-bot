@@ -4,8 +4,8 @@ import { describe, it } from 'node:test';
 process.env.OPENAI_API_KEY = 'sk-test';
 process.env.DATABASE_URL = 'postgres://localhost/test';
 process.env.WEB_ORIGIN = 'http://localhost:3001';
-process.env.ADMIN_API_KEY = 'admin-convos-test';
-process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret';
+process.env.ADMIN_API_KEY = 'admin-convos-test-at-least-32chars!';
+process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret-at-least-32-chars-long!!';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
 // Re-implement the pagination parsing logic from conversations.ts to verify

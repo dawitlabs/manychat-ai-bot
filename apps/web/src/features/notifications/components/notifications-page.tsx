@@ -58,8 +58,8 @@ export default function NotificationsPage() {
             status={n.status}
             createdAt={n.createdAt}
             actions={n.actions}
-            onAction={(_notifId, _actionId, _type) => {
-              router.push('/dashboard/conversations');
+            onAction={() => {
+              router.push(`/dashboard/conversations?lead=${encodeURIComponent(n.user_id)}`);
             }}
           />
         ))}

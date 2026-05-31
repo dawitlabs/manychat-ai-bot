@@ -131,12 +131,20 @@ export function formatKnowledgeContext(snippets: KnowledgeSnippet[]): string {
   ].join('\n');
 }
 
+const CONTEXT_BUNDLE_TTL_MS = 30_000;
+let contextBundleCache: { templates: ApiTemplates; posts: Post[]; adminItems: ReturnType<typeof listKnowledgeItems> extends Promise<infer T> ? T : never; expiresAt: number } | null = null;
+
 export async function getRuntimeKnowledgeContext(query: string): Promise<string> {
-  const [templates, posts, adminItems] = await Promise.all([
-    getSettingJson<ApiTemplates>('templates', DEFAULT_TEMPLATES),
-    listPosts().catch(() => []),
-    listKnowledgeItems({ active: true, limit: 200 }).catch(() => []),
-  ]);
+  const now = Date.now();
+  if (!contextBundleCache || contextBundleCache.expiresAt <= now) {
+    const [templates, posts, adminItems] = await Promise.all([
+      getSettingJson<ApiTemplates>('templates', DEFAULT_TEMPLATES),
+      listPosts().catch((): Post[] => []),
+      listKnowledgeItems({ active: true, limit: 200 }).catch(() => []),
+    ]);
+    contextBundleCache = { templates, posts, adminItems, expiresAt: now + CONTEXT_BUNDLE_TTL_MS };
+  }
+  const { templates, posts, adminItems } = contextBundleCache;
 
   const snippets: Array<Omit<KnowledgeSnippet, 'score'>> = [
     ...BRAND_SNIPPETS.map(({ score: _score, ...snippet }) => snippet),

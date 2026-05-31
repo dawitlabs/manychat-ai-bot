@@ -5,8 +5,8 @@ import type { Request, Response, NextFunction } from 'express';
 process.env.OPENAI_API_KEY = 'sk-test';
 process.env.DATABASE_URL = 'postgres://localhost/test';
 process.env.WEB_ORIGIN = 'http://localhost:3001';
-process.env.ADMIN_API_KEY = 'admin-key-test';
-process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret';
+process.env.ADMIN_API_KEY = 'admin-key-test-at-least-32-chars!!';
+process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret-at-least-32-chars-long!!';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
  
@@ -46,7 +46,7 @@ describe('requireAdmin middleware', () => {
     const { res, code } = capture();
     let called = false;
     const next: NextFunction = () => { called = true; };
-    requireAdmin(makeReq('admin-key-test'), res, next);
+    requireAdmin(makeReq('admin-key-test-at-least-32-chars!!'), res, next);
     assert.equal(called, true);
     assert.equal(code(), undefined);
   });

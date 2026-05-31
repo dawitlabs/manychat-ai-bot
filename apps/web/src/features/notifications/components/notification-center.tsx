@@ -10,11 +10,13 @@ import { Separator } from '@/components/ui/separator';
 import { NotificationCard } from '@/components/ui/notification-card';
 import { useEvents } from '@/lib/api-client';
 import { eventToNotification, LAST_SEEN_KEY } from '../utils/event-formatter';
+import { useRouter } from 'next/navigation';
 
 const MAX_VISIBLE = 5;
 
 export function NotificationCenter() {
   const { data: events = [] } = useEvents();
+  const router = useRouter();
   const [lastSeen, setLastSeen] = React.useState<number>(() => {
     if (typeof window === 'undefined') return Date.now();
     return Number(localStorage.getItem(LAST_SEEN_KEY) ?? '0');
@@ -78,6 +80,9 @@ export function NotificationCenter() {
                   status={n.status}
                   createdAt={n.createdAt}
                   actions={n.actions}
+                  onAction={() => {
+                    router.push(`/dashboard/conversations?lead=${encodeURIComponent(n.user_id)}`);
+                  }}
                 />
               ))}
             </div>

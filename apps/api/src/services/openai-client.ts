@@ -66,8 +66,8 @@ export interface Classification {
 
 const CLASSIFY_SYSTEM = `You classify sales conversations for a fitness coaching bot.
 Given the conversation history, return ONLY valid JSON with two fields:
-- funnelStep: integer 1-6 (1=goal, 2=nutrition, 3=struggle, 4=offered help, 5=pivoting to call, 6=booking link sent)
-- status: one of "New" (step 1), "Engaged" (steps 2-3), "Qualified" (step 4), "Booked" (steps 5-6 or if a Calendly link appears)
+- funnelStep: integer 1-6 (1=opening/journey, 2=timeline/game plan, 3=nutrition check, 4=pain/struggle, 5=offer+pitch, 6=pivot to call or booking link sent)
+- status: one of "New" (step 1), "Engaged" (steps 2-3), "Qualified" (step 4), "Booked" (steps 5-6 or if a Calendly link appears in the conversation)
 No markdown, no explanation. Example: {"funnelStep":3,"status":"Engaged"}`;
 
 async function logUsage(model: string, usage: OpenAI.CompletionUsage | undefined, userId?: string): Promise<void> {
@@ -182,8 +182,8 @@ export async function generateReply(
       openai.chat.completions.create({
         model,
         messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
-        max_tokens: options.maxTokens ?? botSettings.maxTokens ?? 300,
-        temperature: options.temperature ?? botSettings.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? botSettings.maxTokens ?? SETTING_DEFAULTS.maxTokens,
+        temperature: options.temperature ?? botSettings.temperature ?? SETTING_DEFAULTS.temperature,
       }),
     );
     stopTimer({ type: 'generate', model });

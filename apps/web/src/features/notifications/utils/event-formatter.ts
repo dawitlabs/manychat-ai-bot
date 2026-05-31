@@ -5,6 +5,7 @@ export const LAST_SEEN_KEY = 'notifications_last_seen';
 
 export type Notification = {
   id: string;
+  user_id: string;
   title: string;
   body: string;
   status: NotificationStatus;
@@ -63,12 +64,18 @@ export function eventToNotification(event: ApiEvent, lastSeenMs: number): Notifi
   const createdMs = new Date(event.created_at).getTime();
   const status: NotificationStatus = createdMs > lastSeenMs ? 'unread' : 'read';
 
+  const viewAction: NotificationAction = {
+    ...VIEW_ACTION,
+    id: `view-${event.user_id}`,
+  };
+
   return {
     id: String(event.id),
+    user_id: event.user_id,
     title: formatTitle(event),
     body: formatBody(event),
     status,
     createdAt: event.created_at,
-    actions: [VIEW_ACTION],
+    actions: [viewAction],
   };
 }
