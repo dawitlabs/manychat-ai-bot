@@ -4,6 +4,7 @@ import { env } from '../config/env';
 import { Sentry } from '../config/sentry';
 import { log } from '../lib/logger';
 import { classifyConversation } from './openai-client';
+import { sendToManychat } from './manychat';
 import { updateConversationStatus, markExpiredConversations } from './conversation-store';
 import { appendConversationEvent } from './event-log';
 import { notifyBooking } from './notifications';
@@ -22,6 +23,12 @@ export interface ClassifyPayload {
 export interface NotifyBookingPayload {
   user_id: string;
   first_name: string | null;
+  platform: string;
+}
+
+export interface DeliverReplyPayload {
+  user_id: string;
+  text: string;    // already-formatted, bubbles joined with \n\n
   platform: string;
 }
 
@@ -68,6 +75,18 @@ async function notifyWorker(jobs: Job<NotifyBookingPayload>[]): Promise<void> {
   }
 }
 
+async function deliverReplyWorker(jobs: Job<DeliverReplyPayload>[]): Promise<void> {
+  for (const job of jobs) {
+    const { user_id, text } = job.data;
+    const delivered = await sendToManychat(user_id, text);
+    if (!delivered) {
+      log.warn('[jobs] deliver-reply: ManyChat push failed', { user_id });
+    } else {
+      log.info('[jobs] deliver-reply: pushed async reply', { user_id });
+    }
+  }
+}
+
 async function expireWorker(): Promise<void> {
   await markExpiredConversations();
 }
@@ -91,6 +110,7 @@ export async function startJobs(): Promise<void> {
   // Workers — localConcurrency controls parallelism within this process instance
   await boss.work<ClassifyPayload>('classify-conversation', { localConcurrency: 2 }, classifyWorker);
   await boss.work<NotifyBookingPayload>('notify-booking', notifyWorker);
+  await boss.work<DeliverReplyPayload>('deliver-reply', deliverReplyWorker);
 
   // Cron: archive expired conversations every 30 minutes.
   // Replaces the per-request lastExpiryRun throttle — correct across multiple instances.

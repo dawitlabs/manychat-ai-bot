@@ -12,11 +12,10 @@ import { resolvePostContext } from '../services/post-context';
 import { getRuntimeKnowledgeContext } from '../services/knowledge-search';
 import { buildInboundEventKey, getStoredInboundResponse, storeInboundResponse } from '../services/inbound-events';
 import { getBoss } from '../services/jobs';
-import type { ClassifyPayload } from '../services/jobs';
+import type { ClassifyPayload, DeliverReplyPayload } from '../services/jobs';
 import { Sentry } from '../config/sentry';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
-import { withMcTimeout } from '../lib/mc-timeout';
 import {
   webhookRequests,
   webhookDuration,
@@ -26,6 +25,7 @@ import {
 const router = Router();
 
 const TIMEOUT_REPLY = { version: 'v2', content: { messages: [{ type: 'text', text: "Yo my bad — hit a snag on my end. Send that again and I'll get right back to you 💪" }] } };
+const EMPTY_PAYLOAD = { version: 'v2', content: { messages: [] } };
 
 const bodySchema = z.object({
   user_id: z.string().min(1),
@@ -193,6 +193,16 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         user_id, first_name: first_name ?? null, platform, history: fullHistory,
       } satisfies ClassifyPayload).catch((err) => rlog.error('classify enqueue error', { user_id, msg: (err as Error).message }));
 
+      if (deadlinePassed) {
+        // Deadline already passed — push the real reply via ManyChat API asynchronously
+        const combinedText = toManyChatTextMessages(aiMessages)[0].text;
+        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform } satisfies DeliverReplyPayload)
+          .catch((err) => rlog.error('deliver-reply enqueue error', { user_id, msg: (err as Error).message }));
+        rlog.info('AI reply queued for async delivery', { platform, user_id });
+        outcome = 'replied_async';
+        return EMPTY_PAYLOAD; // already responded to ManyChat — this return is ignored
+      }
+
       if (env.LOG_LEVEL === 'debug') {
         rlog.debug('AI reply sent', { user_id, reply: aiMessages.join(' | ') });
       } else {
@@ -204,15 +214,31 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     } catch (err) {
       Sentry.captureException(err, { extra: { user_id: req.body?.user_id, platform: req.body?.platform } });
       rlog.error('Webhook error', { user_id: req.body?.user_id, msg: (err as Error).message });
+      if (deadlinePassed) {
+        // Error occurred after we already responded — push the fallback so user sees something
+        const fallbackText = TIMEOUT_REPLY.content.messages[0].text;
+        void getBoss().send('deliver-reply', { user_id: req.body?.user_id ?? '', text: fallbackText, platform } satisfies DeliverReplyPayload)
+          .catch(() => { /* best effort */ });
+      }
       outcome = 'error';
       return TIMEOUT_REPLY;
     }
   };
 
+  // Hybrid race: reply synchronously if generation finishes before the deadline;
+  // otherwise return empty (ManyChat shows nothing) and push the real reply via
+  // a deliver-reply pg-boss job a few seconds later — zero dropped replies.
+  const DEADLINE_MS = 4_000;
+  let deadlinePassed = false;
+
+  const deadlinePromise = new Promise<object>((resolve) =>
+    setTimeout(() => { deadlinePassed = true; resolve(EMPTY_PAYLOAD); }, DEADLINE_MS),
+  );
+
   const stopDurationTimer = webhookDuration.startTimer({ platform });
-  const responsePayload = await withMcTimeout(handle, TIMEOUT_REPLY);
-  // withMcTimeout returns TIMEOUT_REPLY on deadline — if outcome wasn't set by the handler it's a timeout
-  const finalOutcome = responsePayload === TIMEOUT_REPLY && outcome === 'error' ? 'timeout' : outcome;
+  const responsePayload = await Promise.race([handle(), deadlinePromise]);
+
+  const finalOutcome = responsePayload === EMPTY_PAYLOAD && outcome === 'error' ? 'timeout' : outcome;
   stopDurationTimer({ platform, outcome: finalOutcome });
   webhookRequests.inc({ platform, outcome: finalOutcome });
   if (eventKey) {

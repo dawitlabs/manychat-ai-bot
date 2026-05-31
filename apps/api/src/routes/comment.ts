@@ -11,11 +11,13 @@ import { resolvePostContext } from '../services/post-context';
 import { Sentry } from '../config/sentry';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
-import { withMcTimeout } from '../lib/mc-timeout';
+import { getBoss } from '../services/jobs';
+import type { DeliverReplyPayload } from '../services/jobs';
 
 const router = Router();
 
 const TIMEOUT_REPLY = { version: 'v2', content: { messages: [{ type: 'text', text: "Hey! Appreciate the comment 🙏 Had a quick tech hiccup — what's your main fitness goal right now?" }] } };
+const EMPTY_PAYLOAD = { version: 'v2', content: { messages: [] } };
 
 const bodySchema = z.object({
   user_id: z.string().min(1),
@@ -86,15 +88,33 @@ router.post('/comment', webhookLimiter, verifyManychat, async (req: Request, res
         rlog.info('Opening DM sent', { platform, user_id, chunks: aiMessages.length });
       }
 
+      if (deadlinePassed) {
+        const combinedText = toManyChatTextMessages(aiMessages)[0].text;
+        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform } satisfies DeliverReplyPayload)
+          .catch((err) => rlog.error('deliver-reply enqueue error', { user_id, msg: (err as Error).message }));
+        rlog.info('Opening DM queued for async delivery', { platform, user_id });
+        return EMPTY_PAYLOAD;
+      }
+
       return { version: 'v2', content: { messages: toManyChatTextMessages(aiMessages) } };
     } catch (err) {
       Sentry.captureException(err, { extra: { user_id: req.body?.user_id, platform: req.body?.platform } });
       rlog.error('Comment error', { user_id: req.body?.user_id, msg: (err as Error).message });
+      if (deadlinePassed) {
+        void getBoss().send('deliver-reply', { user_id: req.body?.user_id ?? '', text: TIMEOUT_REPLY.content.messages[0].text, platform } satisfies DeliverReplyPayload)
+          .catch(() => { /* best effort */ });
+      }
       return TIMEOUT_REPLY;
     }
   };
 
-  res.json(await withMcTimeout(handle, TIMEOUT_REPLY));
+  const DEADLINE_MS = 4_000;
+  let deadlinePassed = false;
+  const deadlinePromise = new Promise<object>((resolve) =>
+    setTimeout(() => { deadlinePassed = true; resolve(EMPTY_PAYLOAD); }, DEADLINE_MS),
+  );
+
+  res.json(await Promise.race([handle(), deadlinePromise]));
 });
 
 export default router;

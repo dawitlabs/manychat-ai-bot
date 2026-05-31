@@ -11,6 +11,7 @@ const schema = z.object({
   ADMIN_API_KEY: z.string().min(1),
   CALENDLY_URL: z.string().url().default('https://calendly.com/kyle-briere-largedumbbells/30'),
   MANYCHAT_API_KEY: z.string().optional(),
+  MANYCHAT_IG_FLOW_NS: z.string().default('content20260527181536_194635'),
   INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
   FACEBOOK_PAGE_ACCESS_TOKEN: z.string().optional(),
   SLACK_WEBHOOK_URL: z.string().url().optional(),
