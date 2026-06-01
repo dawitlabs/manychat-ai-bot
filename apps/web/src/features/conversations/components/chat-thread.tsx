@@ -53,6 +53,31 @@ export function ChatThread({ lead }: ChatThreadProps) {
     }
   };
 
+  const handleExport = () => {
+    if (!lead) return;
+    const header = [
+      `Conversation with ${lead.first_name} (${lead.user_id})`,
+      `Platform: ${lead.platform}  |  Status: ${lead.status}  |  Funnel step: ${lead.funnelStep}/6`,
+      `Messages: ${lead.messages.length}`,
+      `Exported: ${format(new Date(), 'PPpp')}`,
+      '',
+      '------------------------------------------------',
+      '',
+    ].join('\n');
+    const body = sortedMessages
+      .map((m) => `[${format(new Date(m.timestamp), 'MMM d, yyyy h:mm a')}] ${m.role === 'assistant' ? 'Kyle (AI)' : lead.first_name}:\n${m.content}\n`)
+      .join('\n');
+    const blob = new Blob([header + body], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conversation-${lead.user_id}-${format(new Date(), 'yyyy-MM-dd')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSend = async () => {
     if (!lead || !draft.trim()) return;
     setSending(true);
@@ -100,7 +125,7 @@ export function ChatThread({ lead }: ChatThreadProps) {
   if (lead.messages.length === 0) {
     return (
       <div className='flex h-full flex-col'>
-        <ThreadHeader lead={lead} pausing={pausing} onPauseToggle={handlePauseToggle} />
+        <ThreadHeader lead={lead} pausing={pausing} onPauseToggle={handlePauseToggle} onExport={handleExport} />
         <div className='flex flex-1 flex-col items-center justify-center gap-3 text-center'>
           <div className='bg-muted flex h-12 w-12 items-center justify-center rounded-full'>
             <Icons.chat className='text-muted-foreground h-6 w-6' />
@@ -117,7 +142,7 @@ export function ChatThread({ lead }: ChatThreadProps) {
 
   return (
     <div className='flex h-full flex-col'>
-      <ThreadHeader lead={lead} pausing={pausing} onPauseToggle={handlePauseToggle} />
+      <ThreadHeader lead={lead} pausing={pausing} onPauseToggle={handlePauseToggle} onExport={handleExport} />
 
       <ScrollArea className='flex-1 min-h-0 overflow-hidden px-4 py-3'>
         <div className='flex flex-col gap-3 pb-2'>
@@ -167,7 +192,7 @@ export function ChatThread({ lead }: ChatThreadProps) {
   );
 }
 
-function ThreadHeader({ lead, pausing, onPauseToggle }: { lead: Lead; pausing: boolean; onPauseToggle: () => void }) {
+function ThreadHeader({ lead, pausing, onPauseToggle, onExport }: { lead: Lead; pausing: boolean; onPauseToggle: () => void; onExport: () => void }) {
   return (
     <div className='border-b px-4 py-3 flex-shrink-0'>
       <div className='flex items-center gap-3'>
@@ -191,6 +216,16 @@ function ThreadHeader({ lead, pausing, onPauseToggle }: { lead: Lead; pausing: b
           <Badge variant='outline' className={`text-xs ${leadStatusBadgeClass(lead.status)}`}>
             {lead.status}
           </Badge>
+          <Button
+            variant='outline'
+            size='sm'
+            className='h-7 text-xs gap-1.5'
+            onClick={onExport}
+            disabled={lead.messages.length === 0}
+            title='Export this conversation as a text transcript'
+          >
+            <Icons.fileText className='h-3 w-3' /> Export
+          </Button>
           <Button
             variant={lead.paused ? 'default' : 'outline'}
             size='sm'
