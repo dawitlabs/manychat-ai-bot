@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { getConversation, upsertConversation, appendMessage, getMessageCount } from '../services/conversation-store';
+import { getConversation, upsertConversation, appendMessage } from '../services/conversation-store';
 import { generateReply } from '../services/openai-client';
 import { SYSTEM_PROMPT } from '../domain/prompts';
 import { getSettingJson } from '../services/settings-store';
@@ -10,9 +10,9 @@ import { formatKyleReply, toManyChatTextMessages } from '../services/response-fo
 import { getDirectAnswer } from '../services/direct-answers';
 import { resolvePostContext } from '../services/post-context';
 import { getRuntimeKnowledgeContext } from '../services/knowledge-search';
-import { buildInboundEventKey, claimOrGetStoredInboundEvent, storeInboundResponse } from '../services/inbound-events';
+import { buildInboundEventKey, claimOrGetStoredInboundEvent, storeInboundResponse, markInboundDelivered } from '../services/inbound-events';
 import { getBoss } from '../services/jobs';
-import type { ClassifyPayload, DeliverReplyPayload } from '../services/jobs';
+import type { ClassifyPayload, GenerateReplyPayload } from '../services/jobs';
 import { Sentry } from '../config/sentry';
 import { env } from '../config/env';
 import { log } from '../lib/logger';
@@ -163,6 +163,10 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         return { version: 'v2', content: { messages: toManyChatTextMessages(directAnswer) } };
       }
 
+      // Persist the inbound message before calling OpenAI so a generation failure or
+      // deadline abort never drops the user's turn from conversation history.
+      await appendMessage(user_id, 'user', message);
+
       let resolvedPrompt = activePrompt.replace(/https:\/\/calendly\.com\/[^\s"')]+/g, bookingLink);
       if (convo?.post_context) {
         resolvedPrompt += `\n\n${await resolvePostContext(convo.post_context, platform)}`;
@@ -177,10 +181,26 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         resolvedPrompt += '\n\nREPEATED QUESTION: The lead repeated the same message. Treat that as a signal the previous answer was not clear enough. Answer more directly, be specific, and move the conversation forward without repeating the same wording.';
       }
 
-      const aiReply = await generateReply(resolvedPrompt, history, { userId: user_id });
-      const aiMessages = formatKyleReply(aiReply);
+      let aiReply: string;
+      try {
+        aiReply = await generateReply(resolvedPrompt, history, { userId: user_id, signal });
+      } catch (err) {
+        if (timedOut) {
+          // Generation blew the ManyChat deadline. Hand off to a durable job that
+          // regenerates and delivers out of band. Awaited so the job is committed to
+          // Postgres before we respond — it survives a crash of this instance, unlike
+          // the previous in-process floating promise.
+          await getBoss().send('generate-reply', {
+            user_id, platform, first_name: first_name ?? null, systemPrompt: resolvedPrompt, history, eventKey,
+          } satisfies GenerateReplyPayload, { singletonKey: eventKey ?? `${platform}:${user_id}` });
+          rlog.info('AI reply handed off to durable job (deadline exceeded)', { platform, user_id });
+          outcome = 'replied_async';
+          return EMPTY_PAYLOAD;
+        }
+        throw err;
+      }
 
-      await appendMessage(user_id, 'user', message);
+      const aiMessages = formatKyleReply(aiReply);
       for (const aiMessage of aiMessages) {
         await appendMessage(user_id, 'assistant', aiMessage);
       }
@@ -191,18 +211,12 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       ];
       // Enqueue classification as a durable job — survives restarts, safe across instances
       void getBoss().send('classify-conversation', {
-        user_id, first_name: first_name ?? null, platform, history: fullHistory,
+        user_id, first_name: first_name ?? null, platform, history: fullHistory, reqId: req.id,
       } satisfies ClassifyPayload).catch((err) => rlog.error('classify enqueue error', { user_id, msg: (err as Error).message }));
 
-      if (deadlinePassed) {
-        // Deadline already passed — push the real reply via ManyChat API asynchronously
-        const combinedText = toManyChatTextMessages(aiMessages)[0].text;
-        const messageSeq = await getMessageCount(user_id);
-        void getBoss().send('deliver-reply', { user_id, text: combinedText, platform, messageSeq } satisfies DeliverReplyPayload)
-          .catch((err) => rlog.error('deliver-reply enqueue error', { user_id, msg: (err as Error).message }));
-        rlog.info('AI reply queued for async delivery', { platform, user_id });
-        outcome = 'replied_async';
-        return EMPTY_PAYLOAD; // already responded to ManyChat — this return is ignored
+      // Delivered synchronously via the HTTP response — record it so a racing fallback no-ops.
+      if (eventKey) {
+        void markInboundDelivered(eventKey).catch(() => { /* best effort */ });
       }
 
       if (env.LOG_LEVEL === 'debug') {
@@ -214,35 +228,32 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       outcome = 'replied';
       return { version: 'v2', content: { messages: toManyChatTextMessages(aiMessages) } };
     } catch (err) {
-      Sentry.captureException(err, { extra: { user_id: req.body?.user_id, platform: req.body?.platform } });
+      Sentry.captureException(err, { extra: { user_id: req.body?.user_id, platform: req.body?.platform, reqId: req.id } });
       rlog.error('Webhook error', { user_id: req.body?.user_id, msg: (err as Error).message });
-      if (deadlinePassed) {
-        // Error occurred after we already responded — push the fallback so user sees something
-        const fallbackText = TIMEOUT_REPLY.content.messages[0].text;
-        void getBoss().send('deliver-reply', { user_id: req.body?.user_id ?? '', text: fallbackText, platform } satisfies DeliverReplyPayload)
-          .catch(() => { /* best effort */ });
-      }
       outcome = 'error';
       return TIMEOUT_REPLY;
     }
   };
 
-  // Hybrid race: reply synchronously if generation finishes before the deadline;
-  // otherwise return empty (ManyChat shows nothing) and push the real reply via
-  // a deliver-reply pg-boss job a few seconds later — zero dropped replies.
+  // Reply synchronously if generation finishes before the deadline; otherwise abort the
+  // in-flight OpenAI call, return empty (ManyChat shows nothing now), and let the durable
+  // generate-reply job deliver a few seconds later — zero dropped replies, even across a crash.
   const DEADLINE_MS = 4_000;
-  let deadlinePassed = false;
-
-  const deadlinePromise = new Promise<object>((resolve) =>
-    setTimeout(() => { deadlinePassed = true; resolve(EMPTY_PAYLOAD); }, DEADLINE_MS),
-  );
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, DEADLINE_MS);
+  const signal = controller.signal;
 
   const stopDurationTimer = webhookDuration.startTimer({ platform });
-  const responsePayload = await Promise.race([handle(), deadlinePromise]);
+  let responsePayload: object;
+  try {
+    responsePayload = await handle();
+  } finally {
+    clearTimeout(timer);
+  }
 
-  const finalOutcome = responsePayload === EMPTY_PAYLOAD && outcome === 'error' ? 'timeout' : outcome;
-  stopDurationTimer({ platform, outcome: finalOutcome });
-  webhookRequests.inc({ platform, outcome: finalOutcome });
+  stopDurationTimer({ platform, outcome });
+  webhookRequests.inc({ platform, outcome });
   if (eventKey) {
     void storeInboundResponse({ eventKey, userId: user_id, message, responsePayload })
       .catch((err) => rlog.warn('Inbound event store failed', { user_id, msg: (err as Error).message }));

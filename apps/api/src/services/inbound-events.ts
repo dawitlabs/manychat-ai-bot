@@ -1,6 +1,15 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, lt } from 'drizzle-orm';
 import { db } from '../db/client';
 import { inboundEvents } from '../db/schema';
+
+// A claim whose response_payload is still null after this long is treated as abandoned
+// (the processing instance crashed or was redeployed mid-flight) and may be reclaimed,
+// so a ManyChat retry or user re-send can recover instead of being suppressed forever.
+export const STALE_CLAIM_MS = 60_000;
+
+export function isClaimStale(claimedAt: Date, now: number, staleMs: number = STALE_CLAIM_MS): boolean {
+  return now - claimedAt.getTime() >= staleMs;
+}
 
 export interface InboundEventInput {
   platform: string;
@@ -65,13 +74,46 @@ export async function claimOrGetStoredInboundEvent(
 
   const existing = await db.query.inboundEvents.findFirst({
     where: eq(inboundEvents.event_key, eventKey),
-    columns: { response_payload: true },
+    columns: { response_payload: true, claimed_at: true },
   });
 
   if (existing?.response_payload) return existing.response_payload as object;
 
-  // In-flight (response_payload still null) — suppress this retry
+  // In-flight: suppress the retry unless the original claim is stale, in which case
+  // atomically take ownership so a crashed-mid-flight message can still be answered.
+  if (existing && isClaimStale(existing.claimed_at, Date.now())) {
+    const reclaimed = await db
+      .update(inboundEvents)
+      .set({ claimed_at: new Date(), message })
+      .where(
+        and(
+          eq(inboundEvents.event_key, eventKey),
+          isNull(inboundEvents.response_payload),
+          lt(inboundEvents.claimed_at, new Date(Date.now() - STALE_CLAIM_MS)),
+        ),
+      )
+      .returning({ id: inboundEvents.id });
+    if (reclaimed.length > 0) return 'claimed';
+  }
+
   return EMPTY_PAYLOAD;
+}
+
+/**
+ * Returns true if an outbound reply has already been delivered for this inbound event.
+ * Used by the durable generate-reply fallback to avoid double-sending on job retries.
+ */
+export async function isInboundDelivered(eventKey: string): Promise<boolean> {
+  const row = await db.query.inboundEvents.findFirst({
+    where: eq(inboundEvents.event_key, eventKey),
+    columns: { delivered_at: true },
+  });
+  return Boolean(row?.delivered_at);
+}
+
+/** Mark an inbound event as delivered. Idempotent. */
+export async function markInboundDelivered(eventKey: string): Promise<void> {
+  await db.update(inboundEvents).set({ delivered_at: new Date() }).where(eq(inboundEvents.event_key, eventKey));
 }
 
 export async function storeInboundResponse(params: {

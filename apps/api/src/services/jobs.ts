@@ -3,11 +3,13 @@ import type { Job } from 'pg-boss';
 import { env } from '../config/env';
 import { Sentry } from '../config/sentry';
 import { log } from '../lib/logger';
-import { classifyConversation } from './openai-client';
+import { classifyConversation, generateReply } from './openai-client';
 import { sendToManychat } from './manychat';
-import { updateConversationStatus, markExpiredConversations, getMessageCount } from './conversation-store';
+import { updateConversationStatus, markExpiredConversations, getMessageCount, appendMessage } from './conversation-store';
 import { appendConversationEvent } from './event-log';
 import { notifyBooking } from './notifications';
+import { formatKyleReply, toManyChatTextMessages } from './response-format';
+import { isInboundDelivered, markInboundDelivered } from './inbound-events';
 import { bookedTransitions } from '../lib/metrics';
 
 // ── Payload types ──────────────────────────────────────────────────────────────
@@ -31,6 +33,15 @@ export interface DeliverReplyPayload {
   text: string;    // already-formatted, bubbles joined with \n\n
   platform: string;
   messageSeq?: number; // if set, skip delivery when newer messages have arrived since enqueue
+}
+
+export interface GenerateReplyPayload {
+  user_id: string;
+  platform: string;
+  first_name: string | null;
+  systemPrompt: string; // fully resolved prompt (booking link + post + knowledge already injected)
+  history: Array<{ role: 'user' | 'assistant'; content: string }>; // includes the latest inbound message
+  eventKey: string | null; // inbound idempotency key; guards against double delivery
 }
 
 // ── Singleton boss ─────────────────────────────────────────────────────────────
@@ -109,6 +120,48 @@ async function deliverReplyWorker(jobs: Job<DeliverReplyPayload>[]): Promise<voi
   }
 }
 
+// Durable fallback for replies that exceeded the synchronous ManyChat deadline.
+// The webhook aborts its in-request generation at the deadline and enqueues this job,
+// which regenerates and pushes the reply out of band. Unlike the previous in-process
+// floating promise, this survives a crash/redeploy of the webhook instance.
+async function generateReplyWorker(jobs: Job<GenerateReplyPayload>[]): Promise<void> {
+  for (const job of jobs) {
+    const { user_id, platform, first_name, systemPrompt, history, eventKey } = job.data;
+    try {
+      // At-least-once delivery: short-circuit obvious retries where a prior attempt
+      // already delivered. A crash between send and mark can still re-send (rare).
+      if (eventKey && (await isInboundDelivered(eventKey))) {
+        log.info('[jobs] generate-reply: already delivered, skipping', { user_id });
+        continue;
+      }
+
+      const aiReply = await generateReply(systemPrompt, history, { userId: user_id });
+      const aiMessages = formatKyleReply(aiReply);
+      for (const aiMessage of aiMessages) {
+        await appendMessage(user_id, 'assistant', aiMessage);
+      }
+
+      const delivered = await sendToManychat(user_id, toManyChatTextMessages(aiMessages)[0].text);
+      if (!delivered) {
+        log.warn('[jobs] generate-reply: ManyChat push failed', { user_id });
+      } else if (eventKey) {
+        await markInboundDelivered(eventKey);
+      }
+
+      const fullHistory = [
+        ...history,
+        ...aiMessages.map((content) => ({ role: 'assistant' as const, content })),
+      ];
+      await getBoss().send('classify-conversation', { user_id, first_name, platform, history: fullHistory } satisfies ClassifyPayload);
+      log.info('[jobs] generate-reply: delivered async', { user_id, delivered, chunks: aiMessages.length });
+    } catch (err) {
+      log.error('[jobs] generate-reply failed', { user_id, msg: (err as Error).message });
+      Sentry.captureException(err, { extra: { user_id } });
+      throw err; // surface to pg-boss so the job is retried, then dead-lettered
+    }
+  }
+}
+
 async function expireWorker(): Promise<void> {
   try {
     await markExpiredConversations();
@@ -142,6 +195,8 @@ export async function startJobs(): Promise<void> {
     boss.createQueue('notify-booking-dlq'),
     boss.createQueue('deliver-reply', { retryLimit: 5, retryDelay: 5, deadLetter: 'deliver-reply-dlq' }),
     boss.createQueue('deliver-reply-dlq'),
+    boss.createQueue('generate-reply', { retryLimit: 3, retryDelay: 5, deadLetter: 'generate-reply-dlq' }),
+    boss.createQueue('generate-reply-dlq'),
     boss.createQueue('expire-conversations'),
   ]);
 
@@ -149,6 +204,7 @@ export async function startJobs(): Promise<void> {
   await boss.work<ClassifyPayload>('classify-conversation', { localConcurrency: 2 }, classifyWorker);
   await boss.work<NotifyBookingPayload>('notify-booking', notifyWorker);
   await boss.work<DeliverReplyPayload>('deliver-reply', deliverReplyWorker);
+  await boss.work<GenerateReplyPayload>('generate-reply', { localConcurrency: 2 }, generateReplyWorker);
 
   // Cron: archive expired conversations every 30 minutes.
   // Replaces the per-request lastExpiryRun throttle — correct across multiple instances.

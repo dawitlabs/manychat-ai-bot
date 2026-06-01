@@ -26,6 +26,7 @@ import { env } from './config/env';
 import { log } from './lib/logger';
 import { Sentry } from './config/sentry';
 import { startJobs, stopJobs } from './services/jobs';
+import { startSettingsInvalidation } from './services/settings-store';
 
 const app = express();
 
@@ -62,6 +63,7 @@ const server = app.listen(env.PORT, () => {
     log.error('[jobs] failed to start pg-boss', { message: err.message });
     Sentry.captureException(err);
   });
+  void startSettingsInvalidation();
 });
 
 // Graceful shutdown — stop accepting new connections, drain in-flight requests,

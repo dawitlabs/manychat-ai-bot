@@ -57,6 +57,13 @@
       "when": 1748736000000,
       "tag": "0007_version_and_event_log",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780185600000,
+      "tag": "0008_inbound_event_claims",
+      "breakpoints": true
     }
   ]
 }

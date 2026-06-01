@@ -9,7 +9,7 @@ process.env.MANYCHAT_WEBHOOK_SECRET = 'test-secret-at-least-32-chars-long!!';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-chars-long!';
 
  
-const { buildInboundEventKey } = require('./inbound-events') as typeof import('./inbound-events');
+const { buildInboundEventKey, isClaimStale, STALE_CLAIM_MS } = require('./inbound-events') as typeof import('./inbound-events');
 
 describe('buildInboundEventKey', () => {
   it('uses the first stable inbound event id', () => {
@@ -39,5 +39,26 @@ describe('buildInboundEventKey', () => {
     // Different 2-minute bucket → different key
     const key3 = buildInboundEventKey({ platform: 'instagram', userId: 'u4', message: 'hello', timestamp: 120_000 });
     assert.notEqual(key, key3);
+  });
+});
+
+describe('isClaimStale', () => {
+  const now = 1_000_000_000_000;
+
+  it('treats a fresh claim as not stale', () => {
+    assert.equal(isClaimStale(new Date(now - 1_000), now), false);
+  });
+
+  it('treats a claim older than the stale window as reclaimable', () => {
+    assert.equal(isClaimStale(new Date(now - STALE_CLAIM_MS - 1), now), true);
+  });
+
+  it('is stale exactly at the boundary', () => {
+    assert.equal(isClaimStale(new Date(now - STALE_CLAIM_MS), now), true);
+  });
+
+  it('respects a custom stale window', () => {
+    assert.equal(isClaimStale(new Date(now - 5_000), now, 10_000), false);
+    assert.equal(isClaimStale(new Date(now - 15_000), now, 10_000), true);
   });
 });

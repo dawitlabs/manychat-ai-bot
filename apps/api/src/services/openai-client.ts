@@ -171,7 +171,7 @@ export async function extractPostContent(text: string): Promise<PostExtraction> 
 export async function generateReply(
   systemPrompt: string,
   messageHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  options: { maxTokens?: number; temperature?: number; userId?: string } = {},
+  options: { maxTokens?: number; temperature?: number; userId?: string; signal?: AbortSignal } = {},
 ): Promise<string> {
   const botSettings = await getSettingJson<BotSettings>('bot_settings', SETTING_DEFAULTS);
   const model = botSettings.model ?? 'gpt-4o-mini';
@@ -179,12 +179,15 @@ export async function generateReply(
 
   try {
     const completion = await withRetry(() =>
-      openai.chat.completions.create({
-        model,
-        messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
-        max_tokens: options.maxTokens ?? botSettings.maxTokens ?? SETTING_DEFAULTS.maxTokens,
-        temperature: options.temperature ?? botSettings.temperature ?? SETTING_DEFAULTS.temperature,
-      }),
+      openai.chat.completions.create(
+        {
+          model,
+          messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
+          max_tokens: options.maxTokens ?? botSettings.maxTokens ?? SETTING_DEFAULTS.maxTokens,
+          temperature: options.temperature ?? botSettings.temperature ?? SETTING_DEFAULTS.temperature,
+        },
+        { signal: options.signal },
+      ),
     );
     stopTimer({ type: 'generate', model });
     openaiCalls.inc({ type: 'generate', model });

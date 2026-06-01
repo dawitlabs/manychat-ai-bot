@@ -98,6 +98,12 @@ export const inboundEvents = pgTable(
     user_id: text('user_id').notNull(),
     message: text('message').notNull(),
     response_payload: jsonb('response_payload'),
+    // When this event was claimed for processing. A claim with a null response_payload
+    // older than the stale window is treated as abandoned (crashed mid-flight) and reclaimable.
+    claimed_at: timestamp('claimed_at', { withTimezone: true }).notNull().defaultNow(),
+    // Set once an outbound reply has actually been delivered, so the durable
+    // generate-reply fallback never double-sends to the subscriber.
+    delivered_at: timestamp('delivered_at', { withTimezone: true }),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
