@@ -192,7 +192,16 @@ export async function generateReply(
     stopTimer({ type: 'generate', model });
     openaiCalls.inc({ type: 'generate', model });
     void logUsage(model, completion.usage ?? undefined, options.userId);
-    return completion.choices[0].message.content?.trim() ?? '';
+    const choice = completion.choices[0];
+    const text = choice?.message.content?.trim() ?? '';
+    // finishReason: 'length' = hit max_tokens (raise maxTokens); 'stop' = model ended on its own
+    // (prompt/behaviour). chars/preview show whether content is actually missing vs stripped later.
+    log.info('[openai] generate result', {
+      finishReason: choice?.finish_reason,
+      chars: text.length,
+      preview: text.slice(0, 80),
+    });
+    return text;
   } catch (err) {
     stopTimer({ type: 'generate', model });
     openaiErrors.inc({ type: 'generate' });
