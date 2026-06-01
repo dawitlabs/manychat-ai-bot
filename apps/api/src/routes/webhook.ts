@@ -236,10 +236,11 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     }
   };
 
-  // Reply synchronously if generation beats the deadline; otherwise return empty now and
-  // let the single in-flight generation finish and deliver via the ManyChat API (no
-  // regeneration). A delayed generate-reply job is the crash-recovery backstop.
-  const DEADLINE_MS = 4_000;
+  // Wait long enough for a full reply (meal plans take ~5-6s) so it returns in the direct
+  // HTTP response — ManyChat then shows exactly this text. The async flow path (which
+  // triggers ManyChat's default opener and bleeds prior replies) only kicks in if we blow
+  // this window. REQUIRES the ManyChat External Request "Response timeout" to be >= this.
+  const DEADLINE_MS = 8_000;
   let deadlinePassed = false;
   const deadlinePromise = new Promise<object>((resolve) =>
     setTimeout(() => { deadlinePassed = true; resolve(EMPTY_PAYLOAD); }, DEADLINE_MS),
