@@ -69,6 +69,7 @@ router.post('/comment', webhookLimiter, verifyManychat, async (req: Request, res
         {},
       );
       const aiMessages = formatKyleReply(aiReply, { maxMessages: 2 });
+      const assistantText = toManyChatTextMessages(aiMessages)[0].text;
 
       await upsertConversation({
         user_id,
@@ -78,9 +79,7 @@ router.post('/comment', webhookLimiter, verifyManychat, async (req: Request, res
         started_from_comment: comment_text,
         post_context: post_context ?? null,
       });
-      for (const aiMessage of aiMessages) {
-        await appendMessage(user_id, 'assistant', aiMessage);
-      }
+      await appendMessage(user_id, 'assistant', assistantText);
 
       if (env.LOG_LEVEL === 'debug') {
         rlog.debug('Opening DM sent', { user_id, reply: aiMessages.join(' | ') });

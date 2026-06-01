@@ -137,21 +137,17 @@ async function generateReplyWorker(jobs: Job<GenerateReplyPayload>[]): Promise<v
 
       const aiReply = await generateReply(systemPrompt, history, { userId: user_id });
       const aiMessages = formatKyleReply(aiReply);
-      for (const aiMessage of aiMessages) {
-        await appendMessage(user_id, 'assistant', aiMessage);
-      }
+      const assistantText = toManyChatTextMessages(aiMessages)[0].text;
+      await appendMessage(user_id, 'assistant', assistantText);
 
-      const delivered = await sendToManychat(user_id, toManyChatTextMessages(aiMessages)[0].text);
+      const delivered = await sendToManychat(user_id, assistantText);
       if (!delivered) {
         log.warn('[jobs] generate-reply: ManyChat push failed', { user_id });
       } else if (eventKey) {
         await markInboundDelivered(eventKey);
       }
 
-      const fullHistory = [
-        ...history,
-        ...aiMessages.map((content) => ({ role: 'assistant' as const, content })),
-      ];
+      const fullHistory = [...history, { role: 'assistant' as const, content: assistantText }];
       await getBoss().send('classify-conversation', { user_id, first_name, platform, history: fullHistory } satisfies ClassifyPayload);
       log.info('[jobs] generate-reply: delivered async', { user_id, delivered, chunks: aiMessages.length });
     } catch (err) {

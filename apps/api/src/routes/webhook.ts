@@ -141,14 +141,12 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       if (directAnswer) {
         directAnswerHits.inc();
         await appendMessage(user_id, 'user', message);
-        for (const aiMessage of directAnswer) {
-          await appendMessage(user_id, 'assistant', aiMessage);
-        }
+        // Store the reply as one assistant turn (matching how it's delivered), not one row
+        // per bubble — per-bubble storage fragments the history the model sees on later turns.
+        const directText = toManyChatTextMessages(directAnswer)[0].text;
+        await appendMessage(user_id, 'assistant', directText);
 
-        const fullHistory = [
-          ...history,
-          ...directAnswer.map((content) => ({ role: 'assistant' as const, content })),
-        ];
+        const fullHistory = [...history, { role: 'assistant' as const, content: directText }];
         // Enqueue classification as a durable job — survives restarts, safe across instances
         void getBoss().send('classify-conversation', {
           user_id, first_name: first_name ?? null, platform, history: fullHistory, reqId: req.id,
@@ -193,14 +191,13 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
 
       const aiReply = await generateReply(resolvedPrompt, history, { userId: user_id });
       const aiMessages = formatKyleReply(aiReply);
-      for (const aiMessage of aiMessages) {
-        await appendMessage(user_id, 'assistant', aiMessage);
-      }
+      // Store the whole reply as one assistant turn (matching delivery). Storing one row per
+      // bubble fragments the history window, which teaches the model to reply with just an
+      // intro line on later turns.
+      const assistantText = toManyChatTextMessages(aiMessages)[0].text;
+      await appendMessage(user_id, 'assistant', assistantText);
 
-      const fullHistory = [
-        ...history,
-        ...aiMessages.map((content) => ({ role: 'assistant' as const, content })),
-      ];
+      const fullHistory = [...history, { role: 'assistant' as const, content: assistantText }];
       // Enqueue classification as a durable job — survives restarts, safe across instances
       void getBoss().send('classify-conversation', {
         user_id, first_name: first_name ?? null, platform, history: fullHistory, reqId: req.id,
@@ -209,7 +206,7 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
       if (deadlinePassed) {
         // Past the deadline — ManyChat already received an empty response, so push this
         // same reply via the ManyChat API now. No regeneration: we reuse what we just made.
-        const delivered = await sendToManychat(user_id, toManyChatTextMessages(aiMessages)[0].text);
+        const delivered = await sendToManychat(user_id, assistantText);
         if (eventKey && delivered) void markInboundDelivered(eventKey).catch(() => { /* best effort */ });
         rlog.info('AI reply delivered async', { platform, user_id, delivered, chunks: aiMessages.length });
         outcome = 'replied_async';
