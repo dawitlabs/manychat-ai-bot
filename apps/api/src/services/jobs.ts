@@ -187,16 +187,20 @@ export async function startJobs(): Promise<void> {
 
   await boss.start();
 
-  // pg-boss v10+ requires queues to exist before workers can subscribe
+  // pg-boss v10+ requires queues to exist before workers can subscribe, and a queue's
+  // dead-letter target must exist before the queue that references it — so create the
+  // dead-letter queues first, then the main queues in a second pass.
+  await Promise.all([
+    boss.createQueue('classify-conversation-dlq'),
+    boss.createQueue('notify-booking-dlq'),
+    boss.createQueue('deliver-reply-dlq'),
+    boss.createQueue('generate-reply-dlq'),
+  ]);
   await Promise.all([
     boss.createQueue('classify-conversation', { retryLimit: 3, retryDelay: 10, deadLetter: 'classify-conversation-dlq' }),
-    boss.createQueue('classify-conversation-dlq'),
     boss.createQueue('notify-booking', { retryLimit: 5, retryDelay: 30, deadLetter: 'notify-booking-dlq' }),
-    boss.createQueue('notify-booking-dlq'),
     boss.createQueue('deliver-reply', { retryLimit: 5, retryDelay: 5, deadLetter: 'deliver-reply-dlq' }),
-    boss.createQueue('deliver-reply-dlq'),
     boss.createQueue('generate-reply', { retryLimit: 3, retryDelay: 5, deadLetter: 'generate-reply-dlq' }),
-    boss.createQueue('generate-reply-dlq'),
     boss.createQueue('expire-conversations'),
   ]);
 
