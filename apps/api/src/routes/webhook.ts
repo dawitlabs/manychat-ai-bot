@@ -7,6 +7,7 @@ import { getSettingJson } from '../services/settings-store';
 import { webhookLimiter } from '../middleware/rate-limit';
 import { verifyManychat } from '../middleware/verify-manychat';
 import { formatKyleReply, toManyChatTextMessages } from '../services/response-format';
+import { sendToManychat } from '../services/manychat';
 import { getDirectAnswer } from '../services/direct-answers';
 import { resolvePostContext } from '../services/post-context';
 import { getRuntimeKnowledgeContext } from '../services/knowledge-search';
@@ -181,25 +182,16 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         resolvedPrompt += '\n\nREPEATED QUESTION: The lead repeated the same message. Treat that as a signal the previous answer was not clear enough. Answer more directly, be specific, and move the conversation forward without repeating the same wording.';
       }
 
-      let aiReply: string;
-      try {
-        aiReply = await generateReply(resolvedPrompt, history, { userId: user_id, signal });
-      } catch (err) {
-        if (timedOut) {
-          // Generation blew the ManyChat deadline. Hand off to a durable job that
-          // regenerates and delivers out of band. Awaited so the job is committed to
-          // Postgres before we respond — it survives a crash of this instance, unlike
-          // the previous in-process floating promise.
-          await getBoss().send('generate-reply', {
-            user_id, platform, first_name: first_name ?? null, systemPrompt: resolvedPrompt, history, eventKey,
-          } satisfies GenerateReplyPayload, { singletonKey: eventKey ?? `${platform}:${user_id}` });
-          rlog.info('AI reply handed off to durable job (deadline exceeded)', { platform, user_id });
-          outcome = 'replied_async';
-          return EMPTY_PAYLOAD;
-        }
-        throw err;
+      // Durable crash-recovery backstop: if this instance dies mid-generation, this job
+      // regenerates and delivers ~30s later. It no-ops once the in-request path marks the
+      // event delivered (the normal case), so the happy path generates exactly once.
+      if (eventKey) {
+        await getBoss().send('generate-reply', {
+          user_id, platform, first_name: first_name ?? null, systemPrompt: resolvedPrompt, history, eventKey,
+        } satisfies GenerateReplyPayload, { startAfter: 30, singletonKey: eventKey });
       }
 
+      const aiReply = await generateReply(resolvedPrompt, history, { userId: user_id });
       const aiMessages = formatKyleReply(aiReply);
       for (const aiMessage of aiMessages) {
         await appendMessage(user_id, 'assistant', aiMessage);
@@ -214,7 +206,17 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
         user_id, first_name: first_name ?? null, platform, history: fullHistory, reqId: req.id,
       } satisfies ClassifyPayload).catch((err) => rlog.error('classify enqueue error', { user_id, msg: (err as Error).message }));
 
-      // Delivered synchronously via the HTTP response — record it so a racing fallback no-ops.
+      if (deadlinePassed) {
+        // Past the deadline — ManyChat already received an empty response, so push this
+        // same reply via the ManyChat API now. No regeneration: we reuse what we just made.
+        const delivered = await sendToManychat(user_id, toManyChatTextMessages(aiMessages)[0].text);
+        if (eventKey && delivered) void markInboundDelivered(eventKey).catch(() => { /* best effort */ });
+        rlog.info('AI reply delivered async', { platform, user_id, delivered, chunks: aiMessages.length });
+        outcome = 'replied_async';
+        return EMPTY_PAYLOAD;
+      }
+
+      // Delivered synchronously via the HTTP response — record it so the backstop no-ops.
       if (eventKey) {
         void markInboundDelivered(eventKey).catch(() => { /* best effort */ });
       }
@@ -235,25 +237,22 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     }
   };
 
-  // Reply synchronously if generation finishes before the deadline; otherwise abort the
-  // in-flight OpenAI call, return empty (ManyChat shows nothing now), and let the durable
-  // generate-reply job deliver a few seconds later — zero dropped replies, even across a crash.
+  // Reply synchronously if generation beats the deadline; otherwise return empty now and
+  // let the single in-flight generation finish and deliver via the ManyChat API (no
+  // regeneration). A delayed generate-reply job is the crash-recovery backstop.
   const DEADLINE_MS = 4_000;
-  const controller = new AbortController();
-  let timedOut = false;
-  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, DEADLINE_MS);
-  const signal = controller.signal;
+  let deadlinePassed = false;
+  const deadlinePromise = new Promise<object>((resolve) =>
+    setTimeout(() => { deadlinePassed = true; resolve(EMPTY_PAYLOAD); }, DEADLINE_MS),
+  );
 
   const stopDurationTimer = webhookDuration.startTimer({ platform });
-  let responsePayload: object;
-  try {
-    responsePayload = await handle();
-  } finally {
-    clearTimeout(timer);
-  }
+  const responsePayload = await Promise.race([handle(), deadlinePromise]);
 
-  stopDurationTimer({ platform, outcome });
-  webhookRequests.inc({ platform, outcome });
+  // When the deadline wins, handle() is still running so `outcome` is its initial value.
+  const finalOutcome = responsePayload === EMPTY_PAYLOAD && outcome === 'error' ? 'replied_async' : outcome;
+  stopDurationTimer({ platform, outcome: finalOutcome });
+  webhookRequests.inc({ platform, outcome: finalOutcome });
   if (eventKey) {
     void storeInboundResponse({ eventKey, userId: user_id, message, responsePayload })
       .catch((err) => rlog.warn('Inbound event store failed', { user_id, msg: (err as Error).message }));

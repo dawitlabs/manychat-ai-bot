@@ -8,7 +8,10 @@ import { Sentry } from '../config/sentry';
 import { log } from '../lib/logger';
 import { openaiCalls, openaiErrors, openaiDuration } from '../lib/metrics';
 
-const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: 30_000 });
+// maxRetries: 0 — our own withRetry() is the single retry layer. Leaving the SDK default
+// (2) stacks on top of it (up to 4×3 attempts), which can balloon a transient slowdown
+// into minutes. timeout bounds a single hung request well under that.
+const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY, timeout: 20_000, maxRetries: 0 });
 
 interface BotSettings {
   model: string;
@@ -171,7 +174,7 @@ export async function extractPostContent(text: string): Promise<PostExtraction> 
 export async function generateReply(
   systemPrompt: string,
   messageHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
-  options: { maxTokens?: number; temperature?: number; userId?: string; signal?: AbortSignal } = {},
+  options: { maxTokens?: number; temperature?: number; userId?: string } = {},
 ): Promise<string> {
   const botSettings = await getSettingJson<BotSettings>('bot_settings', SETTING_DEFAULTS);
   const model = botSettings.model ?? 'gpt-4o-mini';
@@ -179,15 +182,12 @@ export async function generateReply(
 
   try {
     const completion = await withRetry(() =>
-      openai.chat.completions.create(
-        {
-          model,
-          messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
-          max_tokens: options.maxTokens ?? botSettings.maxTokens ?? SETTING_DEFAULTS.maxTokens,
-          temperature: options.temperature ?? botSettings.temperature ?? SETTING_DEFAULTS.temperature,
-        },
-        { signal: options.signal },
-      ),
+      openai.chat.completions.create({
+        model,
+        messages: [{ role: 'system', content: systemPrompt }, ...messageHistory],
+        max_tokens: options.maxTokens ?? botSettings.maxTokens ?? SETTING_DEFAULTS.maxTokens,
+        temperature: options.temperature ?? botSettings.temperature ?? SETTING_DEFAULTS.temperature,
+      }),
     );
     stopTimer({ type: 'generate', model });
     openaiCalls.inc({ type: 'generate', model });
