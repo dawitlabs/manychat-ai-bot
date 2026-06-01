@@ -236,11 +236,12 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
     }
   };
 
-  // MUST stay at or below ManyChat's External Request timeout (~4-5s). If it's higher, a
-  // reply finishing after ManyChat hangs up but before this deadline is returned to a dead
-  // connection AND never falls back to async — i.e. silently dropped mid-conversation.
-  // Keeping it at 4s guarantees slow replies cross into the async-delivery path instead.
-  const DEADLINE_MS = 4_000;
+  // ManyChat's External Request timeout is a fixed 10s. Wait up to 9s (1s network buffer)
+  // so replies — including meal plans (~6s) — return in the direct HTTP response, which
+  // ManyChat delivers verbatim. This keeps replies off the flaky async flow (the source of
+  // dropped replies, the default-opener, and prior-reply bleed). Only generations slower
+  // than 9s fall back to async.
+  const DEADLINE_MS = 9_000;
   let deadlinePassed = false;
   const deadlinePromise = new Promise<object>((resolve) =>
     setTimeout(() => { deadlinePassed = true; resolve(EMPTY_PAYLOAD); }, DEADLINE_MS),
