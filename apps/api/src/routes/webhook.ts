@@ -182,11 +182,13 @@ router.post('/webhook', webhookLimiter, verifyManychat, async (req: Request, res
 
       // Durable crash-recovery backstop: if this instance dies mid-generation, this job
       // regenerates and delivers ~30s later. It no-ops once the in-request path marks the
-      // event delivered (the normal case), so the happy path generates exactly once.
+      // event delivered (the normal case). Fire-and-forget so it never adds latency to the
+      // reply path — a crash in the tiny window before it commits is an acceptable trade.
       if (eventKey) {
-        await getBoss().send('generate-reply', {
+        void getBoss().send('generate-reply', {
           user_id, platform, first_name: first_name ?? null, systemPrompt: resolvedPrompt, history, eventKey,
-        } satisfies GenerateReplyPayload, { startAfter: 30, singletonKey: eventKey });
+        } satisfies GenerateReplyPayload, { startAfter: 30, singletonKey: eventKey })
+          .catch((err) => rlog.error('generate-reply enqueue error', { user_id, msg: (err as Error).message }));
       }
 
       const aiReply = await generateReply(resolvedPrompt, history, { userId: user_id });
